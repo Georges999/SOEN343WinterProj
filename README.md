@@ -18,7 +18,9 @@ The **Smart Education Events System (SEES)** is a platform designed to improve t
 - 📢 **Event Promotion** – Social media integration and email campaigns.  
 - 📊 **Analytics & Reporting** – Insights on event attendance and engagement.  
 - 💳 **Payment Management** – Secure transactions for event fees.
-- 📧 **Email Notifications** – Send automated emails for event confirmations, reminders, and updates.  
+- 📧 **Email Notifications** – Send automated emails for event confirmations, reminders, and updates.
+- 🤖 **AI Chat Assistance** – Integrate an AI-powered chat API to assist users with event-related queries and support.  
+
 
 
 ## Users & Roles
