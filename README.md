@@ -6,10 +6,10 @@
 The **Smart Education Events System (SEES)** is a platform designed to improve the organization and management of educational events such as conferences, workshops, and webinars. It enhances event planning, scheduling, attendee engagement, and analytics.
 
 ## Tech Stack
-- **Frontend:** React,Vite, Node.js  
+- **Frontend:** React, Vite, React Router DOM, Node.js  
 - **Backend:** Node.js, Express.js  
 - **Database:** MongoDB  
-- **Other Tools:** GitHub, VS Code  
+- **Other Tools:** GitHub, VS Code, Twillio SendGrid, OpenAI   
 
 ## Core Features
 - 📅 **Event Planning & Scheduling** – Manage event details, calendars, and registrations.  
