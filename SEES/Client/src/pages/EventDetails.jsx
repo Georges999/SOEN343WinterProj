@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getEventById } from '../services/api';
+import { getEventById,registerForEvent,cancelRegistration } from '../services/api';
 
 function EventDetails({ user }) {
   const { id } = useParams();
@@ -9,6 +9,7 @@ function EventDetails({ user }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isRegistered, setIsRegistered] = useState(false);
+  const [registrationLoading, setRegistrationLoading] = useState(false);
 
   useEffect(() => {
     fetchEventDetails();
@@ -35,9 +36,34 @@ function EventDetails({ user }) {
       navigate('/login');
       return;
     }
-    
-    // Registration logic will be implemented later
-    alert('Registration feature coming soon!');
+    //registeration logic
+    try {
+      setRegistrationLoading(true);
+      await registerForEvent(id);
+      
+      // Refresh event details to update attendees list
+      await fetchEventDetails();
+      setIsRegistered(true);
+    } catch (err) {
+      setError(err.message || 'Failed to register for event');
+    } finally {
+      setRegistrationLoading(false);
+    }
+  };
+
+  const handleCancelRegistration = async () => {
+    try {
+      setRegistrationLoading(true);
+      await cancelRegistration(id);
+      
+      // Refresh event details to update attendees list
+      await fetchEventDetails();
+      setIsRegistered(false);
+    } catch (err) {
+      setError(err.message || 'Failed to cancel registration');
+    } finally {
+      setRegistrationLoading(false);
+    }
   };
 
   if (loading) return <div className="loading">Loading event details...</div>;
@@ -109,7 +135,12 @@ function EventDetails({ user }) {
             {isRegistered ? (
               <div className="registered-message">
                 <p>You are registered for this event!</p>
-                <button className="cancel-button">Cancel Registration</button>
+                <button 
+                  className="cancel-button" 
+                  onClick={handleCancelRegistration}
+                  disabled={registrationLoading}
+                > {registrationLoading ? 'Processing...' : 'Cancel Registration'}
+                </button>
               </div>
             ) : (
               <button 
@@ -117,7 +148,8 @@ function EventDetails({ user }) {
                 onClick={handleRegister}
                 disabled={event.attendees?.length >= event.capacity}
               >
-                {event.attendees?.length >= event.capacity ? 'Event Full' : 'Register Now'}
+                {registrationLoading ? 'Processing...' : 
+                  event.attendees?.length >= event.capacity ? 'Event Full' : 'Register Now'}
               </button>
             )}
             <p className="spots-left">
