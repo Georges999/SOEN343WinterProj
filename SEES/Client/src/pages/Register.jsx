@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { registerUser } from '../services/api';
 
 function Register({ setUser }) {
@@ -8,7 +8,8 @@ function Register({ setUser }) {
     name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    role: 'client' // Default role
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -45,7 +46,18 @@ function Register({ setUser }) {
       const userData = await registerUser(registrationData);
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
-      navigate('/dashboard');
+      
+      // Redirect based on user role
+      switch(userData.role) {
+        case 'admin':
+          navigate('/admin/dashboard');
+          break;
+        case 'promoter':
+          navigate('/promoter/dashboard');
+          break;
+        default:
+          navigate('/dashboard');
+      }
     } catch (error) {
       setError(error.message || 'Registration failed');
     } finally {
@@ -107,13 +119,28 @@ function Register({ setUser }) {
           />
         </div>
 
+        {/* New role selection field */}
+        <div className="form-group">
+          <label htmlFor="role">Account Type</label>
+          <select
+            id="role"
+            name="role"
+            value={formData.role}
+            onChange={handleChange}
+          >
+            <option value="client">Client (Attend Events)</option>
+            <option value="admin">Admin (Create Events)</option>
+            <option value="promoter">Promoter (Promote Events)</option>
+          </select>
+        </div>
+
         <button type="submit" disabled={loading}>
           {loading ? 'Creating Account...' : 'Register'}
         </button>
       </form>
       
       <p className="login-link">
-        Already have an account? <a href="/login">Login here</a>
+        Already have an account? <Link to="/login">Login here</Link>
       </p>
     </div>
   );

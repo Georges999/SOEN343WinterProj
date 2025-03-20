@@ -152,6 +152,19 @@ function CreateEvent({ user }) {
           />
         </div>
 
+<div className="form-group">
+  <label htmlFor="registrationFee">Registration Fee ($)</label>
+  <input
+    type="number"
+    id="registrationFee"
+    name="registrationFee"
+    min="0"
+    step="0.01"
+    value={formData.registrationFee}
+    onChange={handleChange}
+  />
+</div>
+
         <div className="form-group checkbox">
           <input
             type="checkbox"

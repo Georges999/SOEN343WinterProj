@@ -1,5 +1,5 @@
 //event schema
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const eventSchema = new mongoose.Schema(
   {
@@ -44,11 +44,29 @@ const eventSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
       }
-    ]
+    ],
+    // Promotion fields
+    isPromoted: {
+      type: Boolean,
+      default: false
+    },
+    activePromotion: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Promotion'
+    },
+    registrationFee: {
+      type: Number,
+      default: 0
+    },
+    registrationFee: {
+      type: Number,
+      default: 0 // Free events have a fee of 0
+    }
   },
   {
     timestamps: true
   }
+  
 );
 
 module.exports = mongoose.model('Event', eventSchema);

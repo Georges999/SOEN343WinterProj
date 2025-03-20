@@ -52,14 +52,10 @@ function Dashboard({ user }) {
       <div className="dashboard-header">
         <div className="user-welcome">
           <h1>Welcome, {user?.name || 'User'}!</h1>
-          <p className="subtitle">Manage your events and registrations</p>
+          <p className="subtitle">View and manage your event registrations</p>
         </div>
         
-        <div className="dashboard-actions">
-          <Link to="/create-event" className="create-event-btn">
-            <i className="fas fa-plus"></i> Create New Event
-          </Link>
-        </div>
+        {/* Remove the Create Event button since only admins can create events */}
       </div>
 
       {error && <div className="error-message">{error}</div>}
@@ -111,6 +107,10 @@ function Dashboard({ user }) {
               <div className="event-card-header" style={{
                 backgroundColor: event.organizer === user._id ? '#e3f2fd' : '#fff'
               }}>
+                {/* Add the promoted tag here */}
+                {event.isPromoted && (
+                  <span className="promoted-tag">Promoted</span>
+                )}
                 <span className="event-category">{event.category}</span>
                 <h3 className="event-title">{event.title}</h3>
               </div>
@@ -136,7 +136,8 @@ function Dashboard({ user }) {
                 <Link to={`/events/${event._id}`} className="view-details-btn">
                   View Details
                 </Link>
-                {event.organizer === user._id && (
+                {/* Remove the edit button unless we want to keep it for admin users */}
+                {event.organizer === user._id && user.role === 'admin' && (
                   <button className="edit-event-btn">
                     <i className="fas fa-edit"></i> Edit
                   </button>
@@ -147,9 +148,14 @@ function Dashboard({ user }) {
         ) : (
           <div className="no-events">
             <p>No events found</p>
-            <Link to="/create-event" className="create-event-link">
-              Create your first event
-            </Link>
+            {/* Remove the create event link */}
+            {user.role === 'admin' ? (
+              <Link to="/create-event" className="create-event-link">
+                Create your first event
+              </Link>
+            ) : (
+              <p>Check back later for new events</p>
+            )}
           </div>
         )}
       </section>
