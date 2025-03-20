@@ -11,9 +11,13 @@ function Header({ user, setUser }) {
       <div className="logo">
         <Link to="/">SEES</Link>
       </div>
+      
       <nav className="nav">
-        <Link to="/">Home</Link>
+        {/* Only show Home link when user is NOT logged in */}
+        {!user && <Link to="/">Home</Link>}
+        
         {user ? (
+          // Links for logged-in users
           <>
             <Link to="/dashboard">Dashboard</Link>
             <Link to="/create-event">Create Event</Link>
@@ -21,6 +25,7 @@ function Header({ user, setUser }) {
             <span className="user-greeting">Hello, {user.name}</span>
           </>
         ) : (
+          // Links for guests
           <>
             <Link to="/login">Login</Link>
             <Link to="/register">Register</Link>
