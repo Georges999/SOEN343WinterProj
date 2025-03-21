@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getEvents } from '../services/api';
+import PromotionBadge from '../components/PromotionBadge';
 
 function Home({ user }) {
   const navigate = useNavigate();
@@ -66,13 +67,14 @@ function Home({ user }) {
         ) : featuredEvents.length > 0 ? (
           <div className="events-grid">
             {featuredEvents.map(event => (
-              <div key={event._id} className="event-card">
+              <div key={event._id} className="event-card" style={{ position: 'relative' }}>
+               <PromotionBadge level={event.promotionLevel} />
                 <h3>{event.title}</h3>
                 <p>{event.description.substring(0, 100)}...</p>
                 <p>{new Date(event.dateTime).toLocaleDateString()}</p>
                 <Link to={`/events/${event._id}`}>View Details</Link>
                 {event.isPromoted && (
-                  <span className="promoted-tag">Promoted</span>
+                  <span className="promoted-tag"></span>
                 )}
               </div>
             ))}

@@ -1,39 +1,41 @@
-const mongoose = require("mongoose");
 
-const PromotionSchema = new mongoose.Schema({
+const mongoose = require('mongoose');
+
+const promotionSchema = new mongoose.Schema({
   event: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Event",
+    ref: 'Event',
     required: true
   },
   promoter: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
+    ref: 'User',
     required: true
   },
   startDate: {
     type: Date,
-    required: true,
     default: Date.now
   },
   endDate: {
     type: Date,
     required: true
   },
-  payment: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Payment"
+  promotionLevel: {
+    type: String,
+    enum: ['basic', 'premium', 'featured'],
+    default: 'featured'
   },
   status: {
     type: String,
-    enum: ["pending", "active", "completed", "cancelled"],
-    default: "pending"
+    enum: ['active', 'completed', 'cancelled'],
+    default: 'active'
   },
-  promotionLevel: {
-    type: String,
-    enum: ["basic", "featured", "premium"],
-    default: "basic"
+  cost: {
+    type: Number,
+    required: true
   }
-}, { timestamps: true });
+}, {
+  timestamps: true
+});
 
-module.exports = mongoose.model("Promotion", PromotionSchema);
+module.exports = mongoose.model('Promotion', promotionSchema);

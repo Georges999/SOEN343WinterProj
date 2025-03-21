@@ -17,6 +17,26 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.get('/promoted', protect, async (req, res) => {
+  try {
+    // Ensure user is a promoter
+    if (req.user.role !== 'promoter') {
+      return res.status(403).json({ message: 'Only promoters can access promoted events' });
+    }
+    
+    // Find events promoted by this user
+    const events = await Event.find({ 
+      promoter: req.user.id,
+      isPromoted: true
+    }).sort({ createdAt: -1 });
+    
+    res.json(events);
+  } catch (error) {
+    console.error('Error fetching promoted events:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Get a single event by ID
 router.get('/:id', async (req, res) => {
   try {

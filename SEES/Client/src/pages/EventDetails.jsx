@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getEventById, registerForEvent, cancelRegistration } from '../services/api';
+import PromotionBadge from '../components/PromotionBadge';
 
 function EventDetails({ user }) {
   const { id } = useParams();
@@ -176,6 +177,30 @@ const handleCancelRegistration = async () => {
                 <strong>Registration Fee:</strong> ${event.registrationFee.toFixed(2)}
               </div>
             )}
+        {event.isPromoted && event.promotionLevel && (
+         <div className="detail-item" style={{
+        backgroundColor: event.promotionLevel === 'featured' ? '#f3e5f5' : 
+                      event.promotionLevel === 'premium' ? '#e3f2fd' : 
+                      '#e8f5e9',
+          padding: '10px',
+          borderRadius: '5px',
+          marginTop: '10px'
+         }}>
+         <strong>Promotion Status:</strong> {' '}
+         <span style={{ fontWeight: 'bold', 
+           color: event.promotionLevel === 'featured' ? '#9c27b0' : 
+                 event.promotionLevel === 'premium' ? '#2196f3' : 
+               '#4caf50' 
+         }}>
+            {event.promotionLevel.charAt(0).toUpperCase() + event.promotionLevel.slice(1)}
+         </span>
+          {event.promotionExpiry && (
+            <div style={{ marginTop: '5px', fontSize: '0.9em' }}>
+             <strong>Promotion Until:</strong> {new Date(event.promotionExpiry).toLocaleDateString()}
+           </div>
+           )}
+           </div>
+           )}
           </section>
 
           <section className="attendees-section">

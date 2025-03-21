@@ -15,6 +15,7 @@ import PromoterPanel from './pages/PromoterPanel';
 import ProtectedRoute from './components/ProtectedRoute'; 
 import EditEvent from "./components/EditEvent";
 import PaymentPage from './pages/PaymentPage.jsx';
+import PromotionOptions from './pages/PromotionOptions';
 
 // Components
 import Header from './components/Header'
@@ -79,6 +80,15 @@ function App() {
   element={
     <ProtectedRoute 
       element={<PaymentPage user={user} />} 
+      user={user} 
+    />
+  } 
+/>
+<Route 
+  path="/promotion-options/:id" 
+  element={
+    <ProtectedRoute 
+      element={<PromotionOptions user={user} />} 
       user={user} 
     />
   } 

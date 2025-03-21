@@ -61,6 +61,17 @@ const eventSchema = new mongoose.Schema(
     registrationFee: {
       type: Number,
       default: 0 // Free events have a fee of 0
+    },
+    isPromoted: { type: Boolean, default: false },
+    promotionLevel: { 
+      type: String, 
+      enum: ['none', 'basic', 'premium', 'featured'],
+      default: 'none'
+    },
+    promotionExpiry: { type: Date },
+    promoter: { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: 'User' 
     }
   },
   {

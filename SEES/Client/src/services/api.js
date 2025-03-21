@@ -280,25 +280,31 @@ export const getPromotedEvents = async () => {
     const user = JSON.parse(localStorage.getItem('user'));
     
     if (!user || !user.token) {
-      throw new Error('Not authorized');
+      throw new Error('You must be logged in to view promoted events');
     }
     
-    const response = await fetch(`${API_URL}/promoter/promotions`, {
+    const response = await fetch(`${API_URL}/events/promoted`, {
       headers: {
         Authorization: `Bearer ${user.token}`
       }
     });
     
-    const data = await response.json();
-    
     if (!response.ok) {
-      throw new Error(data.message || 'Failed to fetch promotions');
+      const text = await response.text();
+      try {
+        const data = JSON.parse(text);
+        throw new Error(data.message || `Server error: ${response.status}`);
+      } catch (e) {
+        throw new Error(`Server error: ${response.status} - ${text.substring(0, 100)}`);
+      }
     }
     
+    const data = await response.json();
     return data;
   } catch (error) {
     console.error('Get promoted events error:', error);
-    throw error;
+    // Return empty array instead of throwing to avoid breaking the UI
+    return [];
   }
 };
 

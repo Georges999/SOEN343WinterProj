@@ -1,17 +1,22 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { getEventById, registerForEvent } from '../services/api';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { getEventById, registerForEvent, processPayment } from '../services/api';
 import PaymentForm from '../components/PaymentForm';
 
 function PaymentPage({ user }) {
   const { type, id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [paymentAmount, setPaymentAmount] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [promotionDetails, setPromotionDetails] = useState({
+    level: 'basic',
+    duration: 7
+  });
 
   useEffect(() => {
     if (!user) {
@@ -36,7 +41,22 @@ function PaymentPage({ user }) {
         } else if (type === 'event-promotion') {
           const eventData = await getEventById(id);
           setEvent(eventData);
-          setPaymentAmount(25); // Default promotion amount
+          
+          // Set promotion details from location state
+          if (location.state?.promotionLevel) {
+            const level = location.state.promotionLevel;
+            setPromotionDetails({
+              level,
+              duration: level === 'featured' ? 30 : level === 'premium' ? 14 : 7
+            });
+            
+            // Use the amount from state or default based on level
+            setPaymentAmount(location.state.amount || 
+              (level === 'featured' ? 100 : level === 'premium' ? 50 : 25));
+          } else {
+            // Default to basic promotion if no state passed
+            setPaymentAmount(25);
+          }
         } else {
           throw new Error('Invalid payment type');
         }
@@ -48,44 +68,51 @@ function PaymentPage({ user }) {
     };
 
     loadData();
-  }, [type, id, user, navigate]);
+  }, [type, id, user, navigate, location.state]);
 
-  const handlePaymentSubmit = async (paymentDetails) => {
-    try {
-      setSubmitting(true);
-      setError('');
-      
-      // For demo purposes, we'll simulate a successful payment
-      // In a real app, you would call your payment API here
+// Update the handlePaymentSubmit function in PaymentPage.jsx
 
-      // Simulate API call with a timeout
-      await new Promise(resolve => setTimeout(resolve, 1500));
+const handlePaymentSubmit = async (paymentDetails) => {
+  try {
+    setSubmitting(true);
+    setError('');
+    
+    // Simulate payment processing with a timeout
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    if (type === 'event-registration') {
+      // Register the user for the event
+      await registerForEvent(id);
       
-      if (type === 'event-registration') {
-        // Register the user for the event
-        await registerForEvent(id);
-        
-        setPaymentSuccess(true);
-        
-        // Show success for 2 seconds before redirecting
-        setTimeout(() => {
-          navigate(`/events/${id}`);
-        }, 2000);
-      } else if (type === 'event-promotion') {
-        // In a real app, call your promotion API here
-        setPaymentSuccess(true);
-        
-        // Show success for 2 seconds before redirecting
-        setTimeout(() => {
-          navigate(`/events/${id}`);
-        }, 2000);
-      }
-    } catch (err) {
-      setError(err.message || 'Payment processing failed');
-    } finally {
-      setSubmitting(false);
+      setPaymentSuccess(true);
+      setTimeout(() => navigate(`/events/${id}`), 2000);
+    } 
+    else if (type === 'event-promotion') {
+      // For promotion, make an actual API call to update the event
+      console.log(`Processing ${promotionDetails.level} promotion for event ${id}`);
+      
+      // Call processPayment API with the correct paymentMethod value
+      await processPayment(`/payments/event-promotion/${id}`, {
+        paymentMethod: 'credit_card', // Changed from 'credit' to 'credit_card'
+        cardDetails: {
+          cardholderName: paymentDetails.cardholderName,
+          cardNumber: paymentDetails.cardNumber,
+          expiryDate: paymentDetails.expiryDate,
+          cvv: paymentDetails.cvv
+        },
+        promotionLevel: promotionDetails.level,
+        amount: paymentAmount
+      });
+      
+      setPaymentSuccess(true);
+      setTimeout(() => navigate('/promoter/dashboard'), 2000);
     }
-  };
+  } catch (err) {
+    setError(err.message || 'Payment processing failed');
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   if (loading) return <div className="loading">Loading payment details...</div>;
   if (error) return <div className="error-message">{error}</div>;
@@ -114,7 +141,7 @@ function PaymentPage({ user }) {
           }}>
             <h2 style={{ color: '#2e7d32' }}>Payment Successful!</h2>
             <p>Your payment has been processed successfully.</p>
-            <p>Redirecting you back to the event...</p>
+            <p>Redirecting you back...</p>
           </div>
         ) : (
           <>
@@ -125,13 +152,27 @@ function PaymentPage({ user }) {
               borderRadius: '5px',
               border: '1px solid #eee'
             }}>
-              <h2 style={{ marginBottom: '10px', fontSize: '18px' }}>Event Details</h2>
+              <h2 style={{ marginBottom: '10px', fontSize: '18px' }}>Summary</h2>
               <div className="event-info">
                 <p><strong>Event:</strong> {event.title}</p>
                 <p><strong>Date:</strong> {new Date(event.dateTime).toLocaleDateString()}</p>
-                <p><strong>Time:</strong> {new Date(event.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                 <p><strong>Location:</strong> {event.location}</p>
-                <p><strong>Amount:</strong> ${paymentAmount.toFixed(2)}</p>
+                
+                {type === 'event-promotion' && (
+                  <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+                    <p><strong>Promotion Package:</strong> {promotionDetails.level.charAt(0).toUpperCase() + promotionDetails.level.slice(1)}</p>
+                    <p><strong>Duration:</strong> {promotionDetails.duration} days</p>
+                  </div>
+                )}
+                
+                <p style={{ 
+                  marginTop: '15px', 
+                  fontSize: '18px', 
+                  fontWeight: 'bold',
+                  color: '#4CAF50'
+                }}>
+                  <strong>Total Amount:</strong> ${paymentAmount.toFixed(2)}
+                </p>
               </div>
             </div>
             
@@ -145,7 +186,7 @@ function PaymentPage({ user }) {
             <div className="payment-actions" style={{ marginTop: '20px', textAlign: 'center' }}>
               <button 
                 className="cancel-payment" 
-                onClick={() => navigate(`/events/${id}`)}
+                onClick={() => navigate(type === 'event-promotion' ? '/promoter/dashboard' : `/events/${id}`)}
                 disabled={submitting}
                 style={{ 
                   backgroundColor: '#f44336', 
