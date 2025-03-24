@@ -1,4 +1,4 @@
-// Create a new file: src/components/PromotionBadge.jsx
+
 import React from 'react';
 
 function PromotionBadge({ level }) {
