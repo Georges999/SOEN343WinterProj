@@ -72,6 +72,11 @@ const eventSchema = new mongoose.Schema(
     promoter: { 
       type: mongoose.Schema.Types.ObjectId, 
       ref: 'User' 
+    }, 
+    seatingLayout: {
+      rows: { type: Number, default: 5 },
+      columns: { type: Number, default: 10 },
+      seatMap: { type: Map, of: String, default: {} }
     }
   },
   {

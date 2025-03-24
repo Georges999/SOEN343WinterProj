@@ -339,3 +339,30 @@ export const updateEvent = async (eventId, eventData) => {
     throw error;
   }
 };
+
+export const removeAttendee = async (eventId, attendeeId) => {
+  try {
+    const user = JSON.parse(localStorage.getItem('user'));
+    
+    if (!user || !user.token) {
+      throw new Error('You must be logged in to remove attendees');
+    }
+    
+    const response = await fetch(`${API_URL}/events/${eventId}/attendees/${attendeeId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${user.token}`
+      }
+    });
+    
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || 'Failed to remove attendee');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Remove attendee error:', error);
+    throw error;
+  }
+};
