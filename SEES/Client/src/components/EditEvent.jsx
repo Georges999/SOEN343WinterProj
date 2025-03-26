@@ -68,14 +68,16 @@ function EditEvent({ user }) {
             setSeatingLayout(eventData.seatingLayout);
           } else {
             // Create default seat map based on capacity
+            // Find an efficient rectangle for the capacity
             const rows = Math.ceil(Math.sqrt(eventData.capacity));
             const columns = Math.ceil(eventData.capacity / rows);
             
-            console.log("Creating default seating layout:", { rows, columns });
+            console.log("Creating default seating layout:", { rows, columns, capacity: eventData.capacity });
             setSeatingLayout({
               rows,
               columns,
-              seatMap: {}
+              seatMap: {},
+              capacity: eventData.capacity // Store capacity to limit available seats
             });
           }
           
@@ -612,42 +614,62 @@ function EditEvent({ user }) {
             </div>
             
             <div style={styles.seatingGrid}>
-              {Array.from({ length: seatingLayout.rows }).map((_, rowIndex) => (
-                Array.from({ length: seatingLayout.columns }).map((_, colIndex) => {
-                  const seatKey = `${rowIndex}-${colIndex}`;
-                  const attendeeId = seatingLayout.seatMap[seatKey];
-                  const attendee = attendees.find(a => a._id === attendeeId);
-                  
-                  return (
-                    <div 
-                      key={seatKey}
+  {Array.from({ length: seatingLayout.rows }).map((_, rowIndex) => (
+    Array.from({ length: seatingLayout.columns }).map((_, colIndex) => {
+      const seatKey = `${rowIndex}-${colIndex}`;
+      const seatNumber = rowIndex * seatingLayout.columns + colIndex + 1;
+      const isValidSeat = seatNumber <= formData.capacity;
+      const attendeeId = seatingLayout.seatMap[seatKey];
+      const attendee = attendees.find(a => a._id === attendeeId);
+      
+             return (
+                   <div 
+                       key={seatKey}
                       style={{
-                        ...styles.seat,
-                        ...(attendeeId ? styles.occupiedSeat : styles.emptySeat)
-                      }}
-                      onClick={() => handleSeatClick(rowIndex, colIndex)}
-                      title={attendee ? attendee.name : 'Empty Seat'}
-                    >
-                      {attendee ? attendee.name.charAt(0) : (rowIndex+1) + '-' + (colIndex+1)}
-                    </div>
-                  );
-                })
-              ))}
-            </div>
-            
-            <div style={{ marginTop: '20px' }}>
-              <h3>Seat Legend</h3>
-              <div style={{ display: 'flex', gap: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <div style={{ ...styles.seat, ...styles.emptySeat, marginRight: '10px' }}>1-1</div>
-                  <span>Empty Seat</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <div style={{ ...styles.seat, ...styles.occupiedSeat, marginRight: '10px' }}>J</div>
-                  <span>Occupied (first letter of attendee's name)</span>
-                </div>
+                     ...styles.seat,
+                     ...(attendeeId ? styles.occupiedSeat : styles.emptySeat),
+                     ...(isValidSeat ? {} : {
+                    backgroundColor: '#e0e0e0',
+                    color: '#9e9e9e',
+                   cursor: 'not-allowed',
+                   opacity: 0.5
+                     })
+                  }}
+               onClick={() => isValidSeat && handleSeatClick(rowIndex, colIndex)}
+                  title={!isValidSeat ? 'Seat not available' : 
+                       attendee ? attendee.name : 'Empty Seat'}
+                     >
+                       {attendee ? attendee.name.charAt(0) : 
+                       isValidSeat ? (rowIndex+1) + '-' + (colIndex+1) : 'X'}
+                        </div>
+                       );
+                    })
+                 ))}
               </div>
-            </div>
+            
+              <div style={{ marginTop: '20px' }}>
+                 <h3>Seat Legend</h3>
+                   <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                     <div style={{ display: 'flex', alignItems: 'center', margin: '5px 0' }}>
+                      <div style={{ ...styles.seat, ...styles.emptySeat, marginRight: '10px' }}>1-1</div>
+                      <span>Empty Seat</span>
+               </div>
+                    <div style={{ display: 'flex', alignItems: 'center', margin: '5px 0' }}>
+                      <div style={{ ...styles.seat, ...styles.occupiedSeat, marginRight: '10px' }}>J</div>
+                       <span>Occupied (first letter of attendee's name)</span>
+              </div>
+                  <div style={{ display: 'flex', alignItems: 'center', margin: '5px 0' }}>
+                    <div style={{ 
+                      ...styles.seat, 
+                      backgroundColor: '#e0e0e0',
+                     color: '#9e9e9e',
+                     opacity: 0.5,
+                      marginRight: '10px' 
+          }}>X</div>
+                <span>Unavailable (exceeds capacity)</span>
+               </div>
+          </div>
+        </div>
           </div>
         )}
         
