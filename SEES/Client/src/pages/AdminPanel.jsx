@@ -51,7 +51,10 @@ function AdminPanel({ user }) {
     <div className="admin-panel">
       <div className="admin-header">
         <h1>Admin Dashboard</h1>
-        <Link to="/create-event" className="create-event-btn">Create New Event</Link>
+        <div className="admin-actions">
+          <Link to="/create-event" className="create-event-btn">Create New Event</Link>
+          <Link to="/admin/analytics" className="analytics-btn">View Analytics</Link>
+        </div>
       </div>
 
       {error && <div className="error-message">{error}</div>}
@@ -125,6 +128,44 @@ function AdminPanel({ user }) {
           </table>
         </div>
       )}
+
+      <style jsx>{`
+        .admin-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 25px;
+        }
+        
+        .admin-actions {
+          display: flex;
+          gap: 15px;
+        }
+        
+        .create-event-btn, .analytics-btn {
+          padding: 10px 20px;
+          border-radius: 4px;
+          text-decoration: none;
+          font-weight: bold;
+          transition: all 0.2s ease;
+        }
+        
+        .create-event-btn {
+          background-color: #4CAF50;
+          color: white;
+        }
+        
+        .analytics-btn {
+          background-color: #9c27b0;
+          color: white;
+        }
+        
+        .create-event-btn:hover, .analytics-btn:hover {
+          opacity: 0.9;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+      `}</style>
     </div>
   );
 }

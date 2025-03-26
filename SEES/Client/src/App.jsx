@@ -12,6 +12,7 @@ import CreateEvent from './pages/CreateEvent'
 import Payment from './pages/Payment';
 import AdminPanel from './pages/AdminPanel';
 import PromoterPanel from './pages/PromoterPanel';
+import AdminAnalytics from './pages/AdminAnalytics'; 
 import ProtectedRoute from './components/ProtectedRoute'; 
 import EditEvent from "./components/EditEvent";
 import PaymentPage from './pages/PaymentPage.jsx';
@@ -90,6 +91,16 @@ function App() {
     <ProtectedRoute 
       element={<PromotionOptions user={user} />} 
       user={user} 
+    />
+  } 
+/>
+<Route 
+  path="/admin/analytics" 
+  element={
+    <ProtectedRoute 
+      element={<AdminAnalytics user={user} />} 
+      user={user} 
+      requiredRole="admin" 
     />
   } 
 />
