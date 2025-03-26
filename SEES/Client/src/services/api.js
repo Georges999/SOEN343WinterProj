@@ -339,3 +339,131 @@ export const updateEvent = async (eventId, eventData) => {
     throw error;
   }
 };
+
+export const removeAttendee = async (eventId, attendeeId) => {
+  try {
+    const user = JSON.parse(localStorage.getItem('user'));
+    
+    if (!user || !user.token) {
+      throw new Error('You must be logged in to remove attendees');
+    }
+    
+    const response = await fetch(`${API_URL}/events/${eventId}/attendees/${attendeeId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${user.token}`
+      }
+    });
+    
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || 'Failed to remove attendee');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Remove attendee error:', error);
+    throw error;
+  }
+};
+
+//for analytics
+export const getAnalyticsSummary = async () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('user'));
+    
+    if (!user || !user.token) {
+      throw new Error('You must be logged in to access analytics');
+    }
+    
+    const response = await fetch(`${API_URL}/admin/analytics/summary`, {
+      headers: {
+        Authorization: `Bearer ${user.token}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch analytics data');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching analytics summary:', error);
+    throw error;
+  }
+};
+
+export const getAttendanceAnalytics = async () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('user'));
+    
+    if (!user || !user.token) {
+      throw new Error('You must be logged in to access analytics');
+    }
+    
+    const response = await fetch(`${API_URL}/admin/analytics/attendance`, {
+      headers: {
+        Authorization: `Bearer ${user.token}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch attendance data');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching attendance analytics:', error);
+    throw error;
+  }
+};
+
+export const getRevenueAnalytics = async () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('user'));
+    
+    if (!user || !user.token) {
+      throw new Error('You must be logged in to access revenue data');
+    }
+    
+    const response = await fetch(`${API_URL}/admin/analytics/revenue`, {
+      headers: {
+        Authorization: `Bearer ${user.token}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch revenue data');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching revenue analytics:', error);
+    throw error;
+  }
+};
+
+export const getPromotionAnalytics = async () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('user'));
+    
+    if (!user || !user.token) {
+      throw new Error('You must be logged in to access promotion data');
+    }
+    
+    const response = await fetch(`${API_URL}/admin/analytics/promotions`, {
+      headers: {
+        Authorization: `Bearer ${user.token}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch promotion data');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching promotion analytics:', error);
+    throw error;
+  }
+};

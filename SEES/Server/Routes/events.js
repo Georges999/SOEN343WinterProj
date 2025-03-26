@@ -205,4 +205,40 @@ router.put('/:id', protect, async (req, res) => {
   }
 });
 
+// Remove an attendee (admin only)
+router.delete('/:id/attendees/:attendeeId', protect, async (req, res) => {
+  try {
+    // Only allow admins to remove attendees
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Only admins can remove attendees' });
+    }
+    
+    const event = await Event.findById(req.params.id);
+    
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+    
+    // Check if attendee exists in the event
+    if (!event.attendees.includes(req.params.attendeeId)) {
+      return res.status(400).json({ message: 'Attendee not registered for this event' });
+    }
+    
+    // Remove attendee from the event
+    const result = await Event.updateOne(
+      { _id: req.params.id },
+      { $pull: { attendees: req.params.attendeeId } }
+    );
+    
+    if (result.modifiedCount === 0) {
+      return res.status(400).json({ message: 'Failed to remove attendee' });
+    }
+    
+    res.json({ message: 'Attendee removed successfully' });
+  } catch (error) {
+    console.error('Error removing attendee:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;
