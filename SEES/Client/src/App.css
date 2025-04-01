@@ -1362,3 +1362,167 @@ button {
           }
         }
       
+
+        /* ================= Enhanced Background Design ================= */
+
+/* Main background pattern and gradient */
+body {
+  background-color: #f8f9fa;
+  background-image: 
+    radial-gradient(#1976d2 1px, transparent 1px),
+    radial-gradient(#4CAF50 1px, transparent 1px);
+  background-size: 50px 50px, 30px 30px;
+  background-position: 0 0, 25px 25px;
+  background-attachment: fixed;
+  position: relative;
+}
+
+/* Main content background to ensure readability */
+.app-container {
+  position: relative;
+  z-index: 1;
+}
+
+/* Decorative shapes positioned across the site */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  z-index: -1;
+  filter: blur(60px);
+}
+
+body::before {
+  top: -100px;
+  right: -50px;
+  background: rgba(25, 118, 210, 0.15);
+}
+
+body::after {
+  bottom: -100px;
+  left: -50px;
+  background: rgba(76, 175, 80, 0.15);
+}
+
+/* Add floating shapes */
+.main-content::before,
+.main-content::after {
+  content: "";
+  position: fixed;
+  z-index: -1;
+}
+
+.main-content::before {
+  width: 400px;
+  height: 400px;
+  top: 20%;
+  right: -200px;
+  background: linear-gradient(135deg, rgba(156, 39, 176, 0.1), rgba(233, 30, 99, 0.1));
+  border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+  animation: floating 15s infinite alternate ease-in-out;
+}
+
+.main-content::after {
+  width: 300px;
+  height: 300px;
+  bottom: 10%;
+  left: -150px;
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(255, 87, 34, 0.1));
+  border-radius: 50% 50% 30% 70% / 50% 50% 70% 30%;
+  animation: floating 20s infinite alternate-reverse ease-in-out;
+}
+
+@keyframes floating {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate(30px, -30px) rotate(5deg);
+  }
+  100% {
+    transform: translate(-30px, 30px) rotate(-5deg);
+  }
+}
+
+/* Card backgrounds enhancement */
+.card, .event-card, .stat-card, .registration-card, 
+.login-page, .register-page, .create-event-page {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Hero section enhancement */
+.hero {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  padding: 3rem 2rem;
+  margin-bottom: 3rem;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  right: -50%;
+  bottom: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(-45deg, #e3f2fd, #e8f5e9, #f3e5f5, #fff8e1);
+  background-size: 400% 400%;
+  z-index: -1;
+  animation: gradientBG 15s ease infinite;
+  transform: rotate(-3deg);
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] body {
+  background-color: #121212;
+  background-image: 
+    radial-gradient(rgba(25, 118, 210, 0.3) 1px, transparent 1px),
+    radial-gradient(rgba(76, 175, 80, 0.3) 1px, transparent 1px);
+}
+
+[data-theme="dark"] .card, 
+[data-theme="dark"] .event-card, 
+[data-theme="dark"] .stat-card, 
+[data-theme="dark"] .registration-card,
+[data-theme="dark"] .login-page, 
+[data-theme="dark"] .register-page, 
+[data-theme="dark"] .create-event-page {
+  background-color: rgba(33, 33, 33, 0.9) !important;
+}
+
+[data-theme="dark"] .hero {
+  background: rgba(33, 33, 33, 0.8);
+}
+
+[data-theme="dark"] .hero::before {
+  background: linear-gradient(-45deg, 
+    rgba(25, 118, 210, 0.2), 
+    rgba(76, 175, 80, 0.2), 
+    rgba(156, 39, 176, 0.2), 
+    rgba(255, 152, 0, 0.2));
+}
+
+/* Add subtle texture overlay */
+.app-container::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%2319769d' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
+  z-index: -2;
+  pointer-events: none;
+}
