@@ -31,8 +31,20 @@ function Home({ user }) {
     const loadEvents = async () => {
       try {
         const events = await getEvents();
-        // Show only 3 events as featured
-        setFeaturedEvents(events.slice(0, 3));
+ 
+        const featured = events
+          .filter(event => event.promotionLevel === 'featured')
+          .slice(0, 4);
+        
+        setFeaturedEvents(featured);
+        
+         if (featured.length < 4) {
+          const otherPromoted = events
+            .filter(event => event.promotionLevel && event.promotionLevel !== 'featured')
+            .slice(0, 4 - featured.length);
+          
+          setFeaturedEvents([...featured, ...otherPromoted]);
+        }
       } catch (error) {
         console.error('Failed to fetch events:', error);
         setError('Failed to load events. Please try again later.');

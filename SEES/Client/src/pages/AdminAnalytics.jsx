@@ -9,7 +9,7 @@ import {
 } from '../services/api';
 
 // Import chart components
-import EventPopularityChart from '../components/EventPopularityChart'; // Fix typo in file name too
+import EventPopularityChart from '../components/EventPopularityChart'; 
 import AttendanceChart from '../components/AttendanceChart';
 import RevenueChart from '../components/RevenueChart';
 import PromotionEffectivenessChart from '../components/PromotionEffectivenessChart';
@@ -40,17 +40,24 @@ function AdminAnalytics({ user }) {
       setLoading(true);
       setError('');
       
-      // In a real implementation, you'd use the actual API calls:
-      // const summary = await getAnalyticsSummary();
-      // const attendance = await getAttendanceAnalytics();
-      // const revenue = await getRevenueAnalytics();
-      // const promotion = await getPromotionAnalytics();
+      let summary, attendance, revenue, promotion;
       
-      // For demonstration, we'll use mock data instead
-      const summary = generateMockSummaryData();
-      const attendance = generateMockAttendanceData();
-      const revenue = generateMockRevenueData();
-      const promotion = generateMockPromotionData();
+      try {
+        // Try API calls first
+        summary = await getAnalyticsSummary();
+        attendance = await getAttendanceAnalytics();
+        revenue = await getRevenueAnalytics();
+        promotion = await getPromotionAnalytics();
+      } catch (apiError) {
+        console.warn("API error, using mock data as fallback");
+        // Fallback to mock data
+        summary = generateMockSummaryData();
+        attendance = generateMockAttendanceData();
+        revenue = generateMockRevenueData();
+        promotion = generateMockPromotionData();
+        
+        setError('Note: Using demo data. Connect to server for real data.');
+      }
       
       setSummaryData(summary);
       setAttendanceData(attendance);
@@ -267,124 +274,6 @@ function AdminAnalytics({ user }) {
           />
         </div>
       </div>
-      
-      <style jsx>{`
-        .analytics-dashboard {
-          padding: 20px;
-          max-width: 1400px;
-          margin: 0 auto;
-        }
-        
-        .analytics-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 20px;
-        }
-        
-        .time-range-selector {
-          display: flex;
-          gap: 10px;
-        }
-        
-        .time-range-btn {
-          padding: 8px 16px;
-          border: 1px solid #ddd;
-          background: white;
-          border-radius: 4px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        
-        .time-range-btn.active {
-          background: #4a90e2;
-          color: white;
-          border-color: #4a90e2;
-        }
-        
-        .analytics-summary {
-          display: flex;
-          gap: 20px;
-          margin-bottom: 30px;
-        }
-        
-        .summary-card {
-          flex: 1;
-          background: white;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-          border-radius: 8px;
-          padding: 20px;
-          text-align: center;
-        }
-        
-        .summary-value {
-          font-size: 2.5rem;
-          font-weight: bold;
-          color: #4a90e2;
-        }
-        
-        .summary-label {
-          font-size: 1rem;
-          color: #666;
-        }
-        
-        .analytics-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 20px;
-        }
-        
-        .chart-container {
-          background: white;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-          border-radius: 8px;
-          padding: 20px;
-          min-height: 350px;
-        }
-        
-        .chart-container h2 {
-          margin-top: 0;
-          margin-bottom: 20px;
-          font-size: 1.2rem;
-          color: #333;
-        }
-        
-        .revenue-summary {
-          display: flex;
-          justify-content: space-between;
-          margin-top: 20px;
-          padding-top: 15px;
-          border-top: 1px solid #eee;
-        }
-        
-        .revenue-item {
-          display: flex;
-          flex-direction: column;
-        }
-        
-        .revenue-label {
-          font-size: 0.9rem;
-          color: #666;
-        }
-        
-        .revenue-value {
-          font-size: 1.2rem;
-          font-weight: bold;
-          color: #4a90e2;
-        }
-        
-        @media (max-width: 1024px) {
-          .analytics-grid {
-            grid-template-columns: 1fr;
-          }
-          
-          .analytics-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 15px;
-          }
-        }
-      `}</style>
     </div>
   );
 }
