@@ -118,94 +118,64 @@ const handlePaymentSubmit = async (paymentDetails) => {
   if (error) return <div className="error-message">{error}</div>;
   if (!event) return <div className="not-found">Event not found</div>;
 
-  return (
-    <div className="payment-page" style={{ 
-      maxWidth: '800px', 
-      margin: '0 auto', 
-      padding: '20px',
-      backgroundColor: '#f9f9f9',
-      borderRadius: '8px',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-    }}>
-      <div className="payment-container">
-        <div className="payment-header" style={{ marginBottom: '20px' }}>
-          <h1 style={{ color: '#333' }}>Complete Your Payment</h1>
+return (
+  <div className="payment-page">
+    <div className="payment-container">
+      <div className="payment-header">
+        <h1>Complete Your Payment</h1>
+      </div>
+      
+      {paymentSuccess ? (
+        <div className="payment-success">
+          <h2>Payment Successful!</h2>
+          <p>Your payment has been processed successfully.</p>
+          <p>Redirecting you back...</p>
         </div>
-        
-        {paymentSuccess ? (
-          <div className="payment-success" style={{
-            padding: '20px',
-            backgroundColor: '#e8f5e9',
-            borderRadius: '5px',
-            textAlign: 'center'
-          }}>
-            <h2 style={{ color: '#2e7d32' }}>Payment Successful!</h2>
-            <p>Your payment has been processed successfully.</p>
-            <p>Redirecting you back...</p>
-          </div>
-        ) : (
-          <>
-            <div className="event-summary" style={{ 
-              marginBottom: '20px',
-              padding: '15px',
-              backgroundColor: '#fff',
-              borderRadius: '5px',
-              border: '1px solid #eee'
-            }}>
-              <h2 style={{ marginBottom: '10px', fontSize: '18px' }}>Summary</h2>
-              <div className="event-info">
-                <p><strong>Event:</strong> {event.title}</p>
-                <p><strong>Date:</strong> {new Date(event.dateTime).toLocaleDateString()}</p>
-                <p><strong>Location:</strong> {event.location}</p>
-                
-                {type === 'event-promotion' && (
-                  <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
-                    <p><strong>Promotion Package:</strong> {promotionDetails.level.charAt(0).toUpperCase() + promotionDetails.level.slice(1)}</p>
-                    <p><strong>Duration:</strong> {promotionDetails.duration} days</p>
-                  </div>
-                )}
-                
-                <p style={{ 
-                  marginTop: '15px', 
-                  fontSize: '18px', 
-                  fontWeight: 'bold',
-                  color: '#4CAF50'
-                }}>
-                  <strong>Total Amount:</strong> ${paymentAmount.toFixed(2)}
-                </p>
+      ) : (
+        <>
+          <div className="event-summary">
+            <h2>Summary</h2>
+            <div className="event-info">
+              <p><strong>Event:</strong> {event.title}</p>
+              <p><strong>Date:</strong> {new Date(event.dateTime).toLocaleDateString()}</p>
+              <p><strong>Location:</strong> {event.location}</p>
+              
+              {type === 'event-promotion' && (
+                <div className="promotion-package">
+                  <p><strong>Promotion Package:</strong> {promotionDetails.level.charAt(0).toUpperCase() + promotionDetails.level.slice(1)}</p>
+                  <p><strong>Duration:</strong> {promotionDetails.duration} days</p>
+                </div>
+              )}
+              
+              <div className="total-amount">
+                <strong>Total Amount:</strong> ${paymentAmount.toFixed(2)}
               </div>
             </div>
-            
+          </div>
+          
+          <div className="payment-form">
             <PaymentForm 
               onSubmit={handlePaymentSubmit} 
               amount={paymentAmount} 
               paymentType={type}
               submitting={submitting}
             />
-            
-            <div className="payment-actions" style={{ marginTop: '20px', textAlign: 'center' }}>
-              <button 
-                className="cancel-payment" 
-                onClick={() => navigate(type === 'event-promotion' ? '/promoter/dashboard' : `/events/${id}`)}
-                disabled={submitting}
-                style={{ 
-                  backgroundColor: '#f44336', 
-                  color: 'white',
-                  padding: '10px 20px',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '16px'
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          </>
-        )}
-      </div>
+          </div>
+          
+          <div className="payment-actions">
+            <button 
+              className="cancel-payment" 
+              onClick={() => navigate(type === 'event-promotion' ? '/promoter/dashboard' : `/events/${id}`)}
+              disabled={submitting}
+            >
+              Cancel
+            </button>
+          </div>
+        </>
+      )}
     </div>
-  );
+  </div>
+);
 }
 
 export default PaymentPage;
