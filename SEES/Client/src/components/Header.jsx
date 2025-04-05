@@ -41,6 +41,7 @@ function Header({ user, setUser }) {
           // Links for regular client users
           <>
             <Link to="/dashboard">Dashboard</Link>
+            <Link to="/opportunity-hub">Opportunity Hub</Link>
             <button onClick={handleLogout}>Logout</button>
             <span className="user-greeting">Hello, {user.name}</span>
           </>

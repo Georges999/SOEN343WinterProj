@@ -241,4 +241,85 @@ router.delete('/:id/attendees/:attendeeId', protect, async (req, res) => {
   }
 });
 
+router.post('/recommendations', auth, async (req, res) => {
+  try {
+    const { skills = [], achievements = [], expertise = [] } = req.body;
+    
+    // Get all events
+    let events = await Event.find({
+      dateTime: { $gt: new Date() } // Only show future events
+    }).populate('organizer', 'name');
+    
+    if (!events.length) {
+      return res.json([]);
+    }
+    
+    // Create search terms from user profile
+    const searchTerms = [
+      ...skills, 
+      ...achievements, 
+      ...expertise
+    ].map(term => term.toLowerCase());
+    
+    // Function to calculate match score for each event
+    const calculateMatchScore = (event) => {
+      let score = 0;
+      let matchReasons = [];
+      
+      // Check title
+      searchTerms.forEach(term => {
+        if (event.title.toLowerCase().includes(term)) {
+          score += 3;
+          matchReasons.push(`Event title matches your profile: "${term}"`);
+        }
+      });
+      
+      // Check description
+      searchTerms.forEach(term => {
+        if (event.description.toLowerCase().includes(term)) {
+          score += 2;
+          if (!matchReasons.some(reason => reason.includes(term))) {
+            matchReasons.push(`Event description matches your profile: "${term}"`);
+          }
+        }
+      });
+      
+      // Check category
+      if (event.category) {
+        if (expertise.some(exp => event.category.toLowerCase().includes(exp.toLowerCase()))) {
+          score += 5;
+          matchReasons.push(`Event category matches your area of expertise`);
+        }
+        
+        if (skills.some(skill => event.category.toLowerCase().includes(skill.toLowerCase()))) {
+          score += 4;
+          matchReasons.push(`Event category matches your skills`);
+        }
+      }
+      
+      // Return the event with score and match reasons
+      return {
+        ...event.toObject(),
+        matchScore: score,
+        matchReasons: score > 0 ? matchReasons : ['General recommendation based on available events']
+      };
+    };
+    
+    // Calculate scores for each event
+    const scoredEvents = events.map(calculateMatchScore);
+    
+    // Filter events with at least some match and sort by score
+    const recommendedEvents = scoredEvents
+      .filter(event => event.matchScore > 0)
+      .sort((a, b) => b.matchScore - a.matchScore)
+      .slice(0, 6); // Limit to top 6 recommendations
+      
+    res.json(recommendedEvents);
+    
+  } catch (error) {
+    console.error('Error getting recommendations:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;
