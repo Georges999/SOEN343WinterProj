@@ -164,8 +164,7 @@ function CreateEvent({ user }) {
     onChange={handleChange}
   />
 </div>
-
-        <div className="form-group checkbox">
+{/*<div className="form-group checkbox">
           <input
             type="checkbox"
             id="isPublic"
@@ -175,7 +174,7 @@ function CreateEvent({ user }) {
           />
           <label htmlFor="isPublic">Public Event</label>
         </div>
-
+     */}
         <button type="submit" disabled={loading}>
           {loading ? 'Creating Event...' : 'Create Event'}
         </button>

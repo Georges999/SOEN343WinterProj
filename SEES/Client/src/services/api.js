@@ -368,6 +368,7 @@ export const removeAttendee = async (eventId, attendeeId) => {
 };
 
 //for analytics
+
 export const getAnalyticsSummary = async () => {
   try {
     const user = JSON.parse(localStorage.getItem('user'));
@@ -377,12 +378,18 @@ export const getAnalyticsSummary = async () => {
     }
     
     const response = await fetch(`${API_URL}/admin/analytics/summary`, {
+      method: 'GET',
       headers: {
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${user.token}`
       }
     });
     
+    console.log('Analytics summary response status:', response.status);
+    
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Server error response:', errorText);
       throw new Error('Failed to fetch analytics data');
     }
     
@@ -402,12 +409,18 @@ export const getAttendanceAnalytics = async () => {
     }
     
     const response = await fetch(`${API_URL}/admin/analytics/attendance`, {
+      method: 'GET',
       headers: {
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${user.token}`
       }
     });
     
+    console.log('Attendance analytics response status:', response.status);
+    
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Server error response:', errorText);
       throw new Error('Failed to fetch attendance data');
     }
     
@@ -425,14 +438,20 @@ export const getRevenueAnalytics = async () => {
     if (!user || !user.token) {
       throw new Error('You must be logged in to access revenue data');
     }
-    
+  
     const response = await fetch(`${API_URL}/admin/analytics/revenue`, {
+      method: 'GET',
       headers: {
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${user.token}`
       }
     });
     
+    console.log('Revenue analytics response status:', response.status);
+    
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Server error response:', errorText);
       throw new Error('Failed to fetch revenue data');
     }
     
@@ -452,12 +471,18 @@ export const getPromotionAnalytics = async () => {
     }
     
     const response = await fetch(`${API_URL}/admin/analytics/promotions`, {
+      method: 'GET',
       headers: {
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${user.token}`
       }
     });
     
+    console.log('Promotion analytics response status:', response.status);
+    
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Server error response:', errorText);
       throw new Error('Failed to fetch promotion data');
     }
     
