@@ -492,3 +492,32 @@ export const getPromotionAnalytics = async () => {
     throw error;
   }
 };
+
+export const getEventRecommendations = async (profile) => {
+  try {
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user || !user.token) {
+          throw new Error('You must be logged in to get recommendations');
+      }
+
+      const response = await fetch(`${API_URL}/recommendations`, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${user.token}`
+          },
+          body: JSON.stringify(profile)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+          throw new Error(data.message || 'Failed to fetch event recommendations');
+      }
+
+      return data;
+  } catch (error) {
+      console.error('Get event recommendations error:', error);
+      throw error;
+  }
+};

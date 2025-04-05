@@ -24,7 +24,10 @@ const UserSchema = new mongoose.Schema({
   eventsPromoted: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: "Promotion"
-  }]
+  }],
+  skills: [{ type: String }],
+  achievements: [{ type: String }],
+  expertise: [{ type: String }]
 }, { timestamps: true });
 
 module.exports = mongoose.model("User", UserSchema);

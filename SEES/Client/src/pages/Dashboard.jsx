@@ -76,6 +76,16 @@ function Dashboard({ user }) {
           <div className="stat-label">Total Events</div>
         </div>
       </div>
+      
+      <div className="feature-promotion">
+  <div className="promotion-card">
+    <h3>Discover Events Just for You</h3>
+    <p>Tell us about your skills and interests, and we'll recommend events that match your profile.</p>
+    <Link to="/opportunity-hub" className="promo-button">
+      <i className="fas fa-compass"></i> Explore Opportunity Hub
+    </Link>
+  </div>
+</div>
 
       <div className="filter-controls">
         <button 

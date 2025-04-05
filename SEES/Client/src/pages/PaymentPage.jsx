@@ -70,8 +70,6 @@ function PaymentPage({ user }) {
     loadData();
   }, [type, id, user, navigate, location.state]);
 
-// Update the handlePaymentSubmit function in PaymentPage.jsx
-
 const handlePaymentSubmit = async (paymentDetails) => {
   try {
     setSubmitting(true);
@@ -88,12 +86,11 @@ const handlePaymentSubmit = async (paymentDetails) => {
       setTimeout(() => navigate(`/events/${id}`), 2000);
     } 
     else if (type === 'event-promotion') {
-      // For promotion, make an actual API call to update the event
       console.log(`Processing ${promotionDetails.level} promotion for event ${id}`);
       
       // Call processPayment API with the correct paymentMethod value
       await processPayment(`/payments/event-promotion/${id}`, {
-        paymentMethod: 'credit_card', // Changed from 'credit' to 'credit_card'
+        paymentMethod: 'credit_card', 
         cardDetails: {
           cardholderName: paymentDetails.cardholderName,
           cardNumber: paymentDetails.cardNumber,

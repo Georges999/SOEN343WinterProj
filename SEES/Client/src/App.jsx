@@ -17,6 +17,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import EditEvent from "./components/EditEvent";
 import PaymentPage from './pages/PaymentPage.jsx';
 import PromotionOptions from './pages/PromotionOptions';
+import QAChatbot from './components/QAChatbot';
+import OpportunityHub from './pages/OpportunityHub';
 
 // Components
 import Header from './components/Header'
@@ -104,9 +106,19 @@ function App() {
     />
   } 
 />
+<Route 
+  path="/opportunity-hub" 
+  element={
+    <ProtectedRoute 
+      element={<OpportunityHub user={user} />} 
+      user={user} 
+    />
+  } 
+/>
           </Routes>
         </main>
         <Footer />
+          {location.pathname !== '/payment' && <QAChatbot />}
       </div>
     </Router>
   )

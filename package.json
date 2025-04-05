@@ -2,9 +2,12 @@
   "dependencies": {
     "@mui/icons-material": "^7.0.0",
     "@mui/material": "^7.0.0",
+    "axios": "^1.8.4",
     "chart.js": "^4.4.8",
     "date-fns": "^4.1.0",
+    "natural": "^8.0.1",
     "react-chartjs-2": "^5.3.0",
+    "react-chatbot-kit": "^2.2.2",
     "recharts": "^2.15.1"
   }
 }
