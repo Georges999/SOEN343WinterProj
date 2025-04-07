@@ -129,12 +129,12 @@ router.post('/recommendations', protect, async (req, res) => {
     }
 });
 
-router.put('/:id/profile', auth, async (req, res) => {
+router.put('/:id/profile', protect, async (req, res) => {
   try {
     const { skills, achievements, expertise } = req.body;
     
     // Make sure the user is updating their own profile or is an admin
-    if (req.user._id !== req.params.id && req.user.role !== 'admin') {
+    if (req.user.id !== req.params.id && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Not authorized to update this profile' });
     }
     
