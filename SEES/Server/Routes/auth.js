@@ -96,37 +96,57 @@ const generateToken = (id, role) => {
 };
 
 router.post('/recommendations', protect, async (req, res) => {
-    try {
-        const { skills, achievements, expertise } = req.body;
-        const allEvents = await Event.find();
+  try {
+      const { skills, achievements, expertise } = req.body;
+      const allEvents = await Event.find();
+      
+      console.log("Recommendation request:", { skills, achievements, expertise });
+      console.log("Found events:", allEvents.length);
+      
+      // Handle case with no events
+      if (!allEvents || allEvents.length === 0) {
+          return res.json([]);
+      }
 
-        const tfidf = new TfIdf();
+      const tfidf = new TfIdf();
 
-        // Build TF-IDF corpus from event descriptions
-        allEvents.forEach(event => {
-            tfidf.addDocument(event.description);
-        });
+      // Build TF-IDF corpus from event descriptions
+      allEvents.forEach(event => {
+          if (event.description) {
+              tfidf.addDocument(event.description);
+          }
+      });
 
-        // Get user interests (example: from user profile or past events)
-        const userQuery = [...skills, ...achievements, ...expertise].join(' ');
+      // Get user interests
+      const userQuery = [...(skills || []), ...(achievements || []), ...(expertise || [])].join(' ');
 
-        const recommendations = [];
-        allEvents.forEach(event => {
-            let score = 0;
-            tfidf.listTerms(0 /* document index */).forEach(function (item) {
-                if (userQuery.includes(item.term)) {
-                    score += item.tfidf;
-                }
-            });
-            recommendations.push({ event, score });
-        });
+      const recommendations = [];
+      allEvents.forEach((event, index) => {
+          let score = 0;
+          // Make sure there's content to analyze
+          if (userQuery && event.description) {
+              try {
+                  tfidf.listTerms(0 /* document index */).forEach(function (item) {
+                      if (userQuery.includes(item.term)) {
+                          score += item.tfidf;
+                      }
+                  });
+              } catch (err) {
+                  console.error("Error processing TF-IDF for event:", err);
+                  // Default score if there's an error
+                  score = 0.1;
+              }
+          }
+          recommendations.push({ event, score });
+      });
 
-        recommendations.sort((a, b) => b.score - a.score);
-        res.json(recommendations.slice(0, 5)); // Top 5 recommendations
-    } catch (error) {
-        console.error('Error fetching event recommendations:', error);
-        res.status(500).json({ message: error.message });
-    }
+      recommendations.sort((a, b) => b.score - a.score);
+      res.json(recommendations.slice(0, 5)); // Top 5 recommendations
+  } catch (error) {
+      console.error('Error fetching event recommendations:', error);
+      // Return empty array instead of error for more graceful handling
+      res.json([]);
+  }
 });
 
 router.put('/:id/profile', protect, async (req, res) => {
