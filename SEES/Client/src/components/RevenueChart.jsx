@@ -19,20 +19,30 @@ ChartJS.register(
   Legend
 );
 
-function RevenueChart({ labels, registrationRevenue, promotionRevenue }) {
-  const data = {
+function RevenueChart({ data }) {
+  // Extract data from props
+  const labels = data?.labels || [];
+  const registration = data?.registration || [];
+  const promotion = data?.promotion || [];
+  
+  // Return placeholder if no data
+  if (labels.length === 0) {
+    return <div className="chart-placeholder">No revenue data available</div>;
+  }
+  
+  const chartData = {
     labels,
     datasets: [
       {
         label: 'Registration Revenue',
-        data: registrationRevenue,
+        data: registration,
         backgroundColor: 'rgba(75, 192, 192, 0.6)',
         borderColor: 'rgba(75, 192, 192, 1)',
         borderWidth: 1
       },
       {
         label: 'Promotion Revenue',
-        data: promotionRevenue,
+        data: promotion,
         backgroundColor: 'rgba(153, 102, 255, 0.6)',
         borderColor: 'rgba(153, 102, 255, 1)',
         borderWidth: 1
@@ -84,9 +94,11 @@ function RevenueChart({ labels, registrationRevenue, promotionRevenue }) {
     }
   };
 
+  console.log('RevenueChart rendering with data:', chartData);
+
   return (
     <div style={{ height: '300px', width: '100%' }}>
-      <Bar data={data} options={options} />
+      <Bar data={chartData} options={options} />
     </div>
   );
 }

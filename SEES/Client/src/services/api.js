@@ -470,7 +470,7 @@ export const getPromotionAnalytics = async () => {
       throw new Error('You must be logged in to access promotion data');
     }
     
-    const response = await fetch(`${API_URL}/admin/analytics/promotions`, {
+    const response = await fetch(`${API_URL}/admin/analytics/promotion`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
