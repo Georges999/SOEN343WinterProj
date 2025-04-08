@@ -52,7 +52,7 @@ router.get('/analytics/summary', protect, restrictTo('admin'), async (req, res) 
         });
       }
     });
-    const totalAttendees = allAttendees.size;
+    const totalAttendees = allAttendees.size || 0; // Ensure it's always a number
     
     // Get total revenue
     const payments = await Payment.find({ status: 'completed' });

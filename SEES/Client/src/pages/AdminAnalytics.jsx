@@ -4,7 +4,8 @@ import {
   getAnalyticsSummary, 
   getAttendanceAnalytics, 
   getRevenueAnalytics, 
-  getPromotionAnalytics 
+  getPromotionAnalytics,
+  getEventsCreated
 } from '../services/api';
 
 // Import chart components
@@ -23,6 +24,7 @@ function AdminAnalytics({ user }) {
   const [attendanceData, setAttendanceData] = useState(null);
   const [revenueData, setRevenueData] = useState(null);
   const [promotionData, setPromotionData] = useState(null);
+  const [events, setEvents] = useState([]);
   
   useEffect(() => {
     // Redirect if not admin
@@ -31,10 +33,25 @@ function AdminAnalytics({ user }) {
       return;
     }
     
-    fetchAnalyticsData();
+    // Fetch all events first
+    const fetchEvents = async () => {
+      try {
+        const eventsData = await getEventsCreated();
+        setEvents(eventsData);
+        
+        // Now that we have events, fetch analytics data
+        await fetchAnalyticsData(eventsData);
+      } catch (err) {
+        console.error("Failed to fetch events:", err);
+        setError("Failed to load events data");
+        setLoading(false);
+      }
+    };
+    
+    fetchEvents();
   }, [user, navigate, timeRange]);
   
-  const fetchAnalyticsData = async () => {
+  const fetchAnalyticsData = async (eventsData) => {
     try {
       setLoading(true);
       setError('');
@@ -54,87 +71,134 @@ function AdminAnalytics({ user }) {
         
         promotion = await getPromotionAnalytics(timeRange);
         console.log('Raw promotion data from API:', promotion);
+
+        // CRITICAL FIX: Calculate total attendees directly from events data
+        // This matches the calculation in AdminPanel.jsx
+        const totalAttendees = eventsData.reduce((sum, event) => sum + (event.attendees?.length || 0), 0);
+        console.log('Calculated total attendees from events:', totalAttendees);
+        
+        // Add diagnostic logging
+        console.log('Data integrity check:', {
+          summaryValid: summary && typeof summary === 'object',
+          calculatedAttendees: totalAttendees,
+          backendAttendees: summary?.totalAttendees,
+          totalEvents: summary?.totalEvents,
+          totalRevenue: summary?.totalRevenue,
+          hasLabels: Array.isArray(summary?.labels),
+          promotionValid: promotion && typeof promotion === 'object',
+          hasCategoryCount: promotion && typeof promotion.categoryCount === 'object',
+          hasPromotionLevels: promotion && typeof promotion.promotionLevels === 'object'
+        });
   
-        // Always ensure summary data has the expected format
-        if (!summary || typeof summary !== 'object') {
-          summary = {
+        // Set summary data with our locally calculated attendees value
+        if (summary && typeof summary === 'object') {
+          setSummaryData({
+            totalEvents: summary.totalEvents || 0,
+            totalAttendees: totalAttendees, // Use our locally calculated value
+            totalRevenue: summary.totalRevenue || 0,
+            labels: Array.isArray(summary.labels) ? summary.labels : [],
+            eventData: Array.isArray(summary.eventData) ? summary.eventData : [],
+            registrationData: Array.isArray(summary.registrationData) ? summary.registrationData : []
+          });
+          
+          console.log('Using attendee count from events data:', totalAttendees);
+        } else {
+          console.warn('Summary data from API is not valid:', summary);
+          setSummaryData({
             totalEvents: 0,
-            totalAttendees: 0,
+            totalAttendees: totalAttendees, // Still use our calculated value
             totalRevenue: 0,
             labels: [],
             eventData: [],
             registrationData: []
-          };
+          });
         }
         
-        // Make sure each chart gets proper data format
-        setSummaryData({
-          ...summary,
-          labels: Array.isArray(summary?.labels) ? summary.labels : [],
-          eventData: Array.isArray(summary?.eventData) ? summary.eventData : [],
-          registrationData: Array.isArray(summary?.registrationData) ? summary.registrationData : []
-        });
+        // Process attendance data directly from backend
+        if (attendance && typeof attendance === 'object') {
+          setAttendanceData({
+            labels: Array.isArray(attendance.labels) ? attendance.labels : [],
+            capacity: Array.isArray(attendance.capacity) ? attendance.capacity : [],
+            attendees: Array.isArray(attendance.attendees) ? attendance.attendees : []
+          });
+        } else {
+          console.warn('Attendance data from API is not valid:', attendance);
+          setAttendanceData({
+            labels: [],
+            capacity: [],
+            attendees: []
+          });
+        }
         
-        setAttendanceData({
-          labels: Array.isArray(attendance?.labels) ? attendance.labels : 
-                 (attendance ? Object.keys(attendance).map(key => key) : []),
-          capacity: Array.isArray(attendance?.capacity) ? attendance.capacity : 
-                   (attendance ? Object.values(attendance).map(item => item.capacity || 0) : []),
-          attendees: Array.isArray(attendance?.attendees) ? attendance.attendees : 
-                    (attendance ? Object.values(attendance).map(item => item.attendees || 0) : [])
-        });
+        // Process revenue data directly from backend
+        if (revenue && typeof revenue === 'object') {
+          setRevenueData({
+            labels: Array.isArray(revenue.labels) ? revenue.labels : [],
+            registration: Array.isArray(revenue.registration) ? revenue.registration : [],
+            promotion: Array.isArray(revenue.promotion) ? revenue.promotion : []
+          });
+        } else {
+          console.warn('Revenue data from API is not valid:', revenue);
+          setRevenueData({
+            labels: [],
+            registration: [],
+            promotion: []
+          });
+        }
         
-        setRevenueData({
-          ...revenue,
-          labels: Array.isArray(revenue?.labels) ? revenue.labels : 
-                 (revenue?.revenueByDay ? Object.keys(revenue.revenueByDay) : []),
-          registration: Array.isArray(revenue?.registration) ? revenue.registration : 
-                       (revenue?.revenueByDay ? Object.values(revenue.revenueByDay).map(d => d.registration || 0) : []),
-          promotion: Array.isArray(revenue?.promotion) ? revenue.promotion : 
-                    (revenue?.revenueByDay ? Object.values(revenue.revenueByDay).map(d => d.promotion || 0) : [])
-        });
-        
-        setPromotionData({
-          ...promotion,
-          // Handle category data
-          categoryLabels: promotion?.categoryCount ? Object.keys(promotion.categoryCount) : [],
-          categoryValues: promotion?.categoryCount ? Object.values(promotion.categoryCount) : [],
-          // Handle promotion levels data
-          levelLabels: promotion?.promotionLevels ? Object.keys(promotion.promotionLevels) : [],
-          levelValues: promotion?.promotionLevels ? Object.values(promotion.promotionLevels) : []
-        });
+        // Process promotion data directly from backend
+        if (promotion && typeof promotion === 'object') {
+          setPromotionData({
+            categoryLabels: promotion.categoryCount ? Object.keys(promotion.categoryCount) : [],
+            categoryValues: promotion.categoryCount ? Object.values(promotion.categoryCount) : [],
+            levelLabels: promotion.promotionLevels ? Object.keys(promotion.promotionLevels) : [],
+            levelValues: promotion.promotionLevels ? Object.values(promotion.promotionLevels) : []
+          });
+        } else {
+          console.warn('Promotion data from API is not valid:', promotion);
+          setPromotionData({
+            categoryLabels: [],
+            categoryValues: [],
+            levelLabels: [],
+            levelValues: []
+          });
+        }
         
       } catch (apiError) {
+        console.error('API error details:', apiError);
         console.log('API error, using mock data as fallback');
         
-        // Mock data with correct formats
+        // Calculate attendees even in fallback mode
+        const totalAttendees = eventsData.reduce((sum, event) => sum + (event.attendees?.length || 0), 0);
+        
+        // Mock data for fallback - only use if the API fails completely
         setSummaryData({
-          totalEvents: 45,
-          totalAttendees: 320,
-          totalRevenue: 6750,
+          totalEvents: eventsData.length,
+          totalAttendees: totalAttendees, // Use our calculated value here too
+          totalRevenue: 0,
           labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-          eventData: [5, 8, 12, 20],
-          registrationData: [25, 40, 95, 160]
+          eventData: [0, 0, 0, 0],
+          registrationData: [0, 0, 0, 0]
         });
         
         setAttendanceData({
-          labels: ['Workshop A', 'Conference B', 'Seminar C', 'Training D', 'Webinar E'],
-          capacity: [50, 200, 100, 30, 500],
-          attendees: [45, 180, 75, 28, 320]
+          labels: ['No Data Available'],
+          capacity: [0],
+          attendees: [0]
         });
         
         setRevenueData({
-          totalRevenue: 6750,
-          labels: ['Jan 1', 'Jan 8', 'Jan 15', 'Jan 22', 'Jan 29'],
-          registration: [850, 1200, 900, 1500, 1100],
-          promotion: [250, 300, 200, 350, 100]
+          totalRevenue: 0,
+          labels: ['No Data'],
+          registration: [0],
+          promotion: [0]
         });
         
         setPromotionData({
-          categoryLabels: ['Technology', 'Business', 'Education', 'Marketing', 'Design'],
-          categoryValues: [15, 10, 8, 7, 5],
-          levelLabels: ['basic', 'premium', 'featured'],
-          levelValues: [12, 8, 5]
+          categoryLabels: ['No Data'],
+          categoryValues: [0],
+          levelLabels: ['No Data'],
+          levelValues: [0]
         });
       }
     } catch (err) {
@@ -145,6 +209,7 @@ function AdminAnalytics({ user }) {
     }
   };
   
+  // The rest of your component remains the same
   return (
     <div className="admin-analytics">
       <h1>Analytics Dashboard</h1>
@@ -182,22 +247,22 @@ function AdminAnalytics({ user }) {
             <h2>Key Metrics</h2>
             <div className="metrics">
               <div className="metric">
-                <h3>{summaryData?.totalEvents || 0}</h3>
+                <h3>{summaryData?.totalEvents !== undefined ? summaryData.totalEvents : 0}</h3>
                 <p>Events Created</p>
               </div>
               <div className="metric">
-                <h3>{summaryData?.totalAttendees || 0}</h3>
+                <h3>{summaryData?.totalAttendees !== undefined ? summaryData.totalAttendees : 0}</h3>
                 <p>Total Attendees</p>
               </div>
               <div className="metric">
-                <h3>${summaryData?.totalRevenue || 0}</h3>
+                <h3>${summaryData?.totalRevenue !== undefined ? summaryData.totalRevenue : 0}</h3>
                 <p>Total Revenue</p>
               </div>
             </div>
           </div>
           
-          {/* Event Growth Chart */}
-          <div className="analytics-card">
+       {/* Event Growth Chart */}
+       <div className="analytics-card">
             <h2>Event & Registration Growth</h2>
             <EventPopularityChart data={{
               labels: summaryData?.labels || [],
@@ -235,6 +300,27 @@ function AdminAnalytics({ user }) {
               values: promotionData?.levelValues || []
             }} />
           </div>
+          
+          {/* Debug button only visible during development */}
+          {process.env.NODE_ENV !== 'production' && (
+            <button 
+              onClick={() => console.log('Current data state:', {
+                summary: summaryData,
+                attendance: attendanceData,
+                revenue: revenueData,
+                promotion: promotionData
+              })}
+              style={{ 
+                marginTop: '20px', 
+                padding: '5px 10px',
+                background: '#f0f0f0',
+                border: '1px solid #ddd',
+                cursor: 'pointer'
+              }}
+            >
+              Debug Data
+            </button>
+          )}
         </div>
       )}
     </div>
