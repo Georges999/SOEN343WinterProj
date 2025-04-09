@@ -23,8 +23,18 @@ ChartJS.register(
   Filler
 );
 
-function EventPopularityChart({ labels, eventData, registrationData }) {
-  const data = {
+function EventPopularityChart({ data }) {
+  // Extract data from props
+  const labels = data?.labels || [];
+  const eventData = data?.eventData || [];
+  const registrationData = data?.registrationData || [];
+  
+  // Return placeholder if no data
+  if (labels.length === 0) {
+    return <div className="chart-placeholder">No growth data available</div>;
+  }
+  
+  const chartData = {
     labels,
     datasets: [
       {
@@ -96,9 +106,11 @@ function EventPopularityChart({ labels, eventData, registrationData }) {
     }
   };
 
+  console.log('EventPopularityChart rendering with data:', chartData);
+
   return (
     <div style={{ height: '300px', width: '100%' }}>
-      <Line data={data} options={options} />
+      <Line data={chartData} options={options} />
     </div>
   );
 }

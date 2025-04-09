@@ -19,22 +19,32 @@ ChartJS.register(
   Legend
 );
 
-function AttendanceChart({ events, capacities, attendees }) {
-  const data = {
-    labels: events,
+function AttendanceChart({ data }) {
+  // Extract data from props
+  const labels = data?.labels || [];
+  const capacity = data?.capacity || [];
+  const attendees = data?.attendees || [];
+  
+  // Return placeholder if no data
+  if (labels.length === 0) {
+    return <div className="chart-placeholder">No attendance data available</div>;
+  }
+  
+  const chartData = {
+    labels,
     datasets: [
       {
         label: 'Capacity',
-        data: capacities,
-        backgroundColor: 'rgba(74, 144, 226, 0.6)',
-        borderColor: 'rgba(74, 144, 226, 1)',
+        data: capacity,
+        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+        borderColor: 'rgba(54, 162, 235, 1)',
         borderWidth: 1
       },
       {
         label: 'Attendees',
         data: attendees,
-        backgroundColor: 'rgba(75, 192, 192, 0.6)',
-        borderColor: 'rgba(75, 192, 192, 1)',
+        backgroundColor: 'rgba(255, 99, 132, 0.5)',
+        borderColor: 'rgba(255, 99, 132, 1)',
         borderWidth: 1
       }
     ]
@@ -45,31 +55,12 @@ function AttendanceChart({ events, capacities, attendees }) {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: 'top',
-      },
-      tooltip: {
-        callbacks: {
-          afterBody: function(context) {
-            const dataIndex = context[0].dataIndex;
-            const capacity = capacities[dataIndex];
-            const attendee = attendees[dataIndex];
-            const percentage = ((attendee / capacity) * 100).toFixed(1);
-            return `Attendance Rate: ${percentage}%`;
-          }
-        }
+        position: 'top'
       }
     },
     scales: {
-      x: {
-        grid: {
-          display: false
-        }
-      },
       y: {
         beginAtZero: true,
-        grid: {
-          color: 'rgba(0, 0, 0, 0.05)'
-        },
         ticks: {
           precision: 0
         }
@@ -77,9 +68,11 @@ function AttendanceChart({ events, capacities, attendees }) {
     }
   };
 
+  console.log('AttendanceChart rendering with data:', chartData);
+
   return (
     <div style={{ height: '300px', width: '100%' }}>
-      <Bar data={data} options={options} />
+      <Bar data={chartData} options={options} />
     </div>
   );
 }

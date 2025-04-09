@@ -13,12 +13,21 @@ ChartJS.register(
   Legend
 );
 
-function CategoryDistributionChart({ categories, distribution }) {
-  const data = {
-    labels: categories,
+function CategoryDistributionChart({ data }) {
+  // Extract labels and values from data prop
+  const labels = data?.labels || [];
+  const values = data?.values || [];
+  
+  // Return placeholder if no data
+  if (labels.length === 0 || values.length === 0) {
+    return <div className="chart-placeholder">No category data available</div>;
+  }
+  
+  const chartData = {
+    labels: labels,
     datasets: [
       {
-        data: distribution,
+        data: values,
         backgroundColor: [
           'rgba(255, 99, 132, 0.6)',
           'rgba(54, 162, 235, 0.6)',
@@ -60,9 +69,11 @@ function CategoryDistributionChart({ categories, distribution }) {
     }
   };
 
+  console.log('CategoryDistributionChart rendering with data:', chartData);
+
   return (
     <div style={{ height: '300px', width: '100%', display: 'flex', justifyContent: 'center' }}>
-      <Pie data={data} options={options} />
+      <Pie data={chartData} options={options} />
     </div>
   );
 }

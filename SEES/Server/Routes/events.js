@@ -1,3 +1,4 @@
+const auth = require('./auth');
 const express = require('express');
 const router = express.Router();
 const Event = require('../Models/Event');

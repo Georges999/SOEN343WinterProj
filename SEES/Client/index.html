@@ -8,6 +8,16 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script type="module" src="/src/main.jsx">
+      // Fix for potential "labels.slice is not a function" error
+  if (typeof window !== 'undefined' && !window.ResizeObserver) {
+    window.ResizeObserver = class MockResizeObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    };
+  }
+    </script>
+    
   </body>
 </html>

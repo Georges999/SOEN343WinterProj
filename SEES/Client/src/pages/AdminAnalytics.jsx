@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format, subDays, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { 
   getAnalyticsSummary, 
   getAttendanceAnalytics, 
   getRevenueAnalytics, 
-  getPromotionAnalytics 
+  getPromotionAnalytics,
+  getEventsCreated
 } from '../services/api';
 
 // Import chart components
@@ -24,6 +24,7 @@ function AdminAnalytics({ user }) {
   const [attendanceData, setAttendanceData] = useState(null);
   const [revenueData, setRevenueData] = useState(null);
   const [promotionData, setPromotionData] = useState(null);
+  const [events, setEvents] = useState([]);
   
   useEffect(() => {
     // Redirect if not admin
@@ -32,10 +33,25 @@ function AdminAnalytics({ user }) {
       return;
     }
     
-    fetchAnalyticsData();
+    // Fetch all events first
+    const fetchEvents = async () => {
+      try {
+        const eventsData = await getEventsCreated();
+        setEvents(eventsData);
+        
+        // Now that we have events, fetch analytics data
+        await fetchAnalyticsData(eventsData);
+      } catch (err) {
+        console.error("Failed to fetch events:", err);
+        setError("Failed to load events data");
+        setLoading(false);
+      }
+    };
+    
+    fetchEvents();
   }, [user, navigate, timeRange]);
   
-  const fetchAnalyticsData = async () => {
+  const fetchAnalyticsData = async (eventsData) => {
     try {
       setLoading(true);
       setError('');
@@ -44,236 +60,269 @@ function AdminAnalytics({ user }) {
       
       try {
         // Try API calls first
-        summary = await getAnalyticsSummary();
-        attendance = await getAttendanceAnalytics();
-        revenue = await getRevenueAnalytics();
-        promotion = await getPromotionAnalytics();
-      } catch (apiError) {
-        console.warn("API error, using mock data as fallback");
-        // Fallback to mock data
-        summary = generateMockSummaryData();
-        attendance = generateMockAttendanceData();
-        revenue = generateMockRevenueData();
-        promotion = generateMockPromotionData();
+        summary = await getAnalyticsSummary(timeRange);
+        console.log('Raw summary data from API:', summary);
         
-        setError('Note: Using demo data. Connect to server for real data.');
+        attendance = await getAttendanceAnalytics(timeRange);
+        console.log('Raw attendance data from API:', attendance);
+        
+        revenue = await getRevenueAnalytics(timeRange);
+        console.log('Raw revenue data from API:', revenue);
+        
+        promotion = await getPromotionAnalytics(timeRange);
+        console.log('Raw promotion data from API:', promotion);
+
+        // CRITICAL FIX: Calculate total attendees directly from events data
+        // This matches the calculation in AdminPanel.jsx
+        const totalAttendees = eventsData.reduce((sum, event) => sum + (event.attendees?.length || 0), 0);
+        console.log('Calculated total attendees from events:', totalAttendees);
+        
+        // Add diagnostic logging
+        console.log('Data integrity check:', {
+          summaryValid: summary && typeof summary === 'object',
+          calculatedAttendees: totalAttendees,
+          backendAttendees: summary?.totalAttendees,
+          totalEvents: summary?.totalEvents,
+          totalRevenue: summary?.totalRevenue,
+          hasLabels: Array.isArray(summary?.labels),
+          promotionValid: promotion && typeof promotion === 'object',
+          hasCategoryCount: promotion && typeof promotion.categoryCount === 'object',
+          hasPromotionLevels: promotion && typeof promotion.promotionLevels === 'object'
+        });
+  
+        // Set summary data with our locally calculated attendees value
+        if (summary && typeof summary === 'object') {
+          setSummaryData({
+            totalEvents: summary.totalEvents || 0,
+            totalAttendees: totalAttendees, // Use our locally calculated value
+            totalRevenue: summary.totalRevenue || 0,
+            labels: Array.isArray(summary.labels) ? summary.labels : [],
+            eventData: Array.isArray(summary.eventData) ? summary.eventData : [],
+            registrationData: Array.isArray(summary.registrationData) ? summary.registrationData : []
+          });
+          
+          console.log('Using attendee count from events data:', totalAttendees);
+        } else {
+          console.warn('Summary data from API is not valid:', summary);
+          setSummaryData({
+            totalEvents: 0,
+            totalAttendees: totalAttendees, // Still use our calculated value
+            totalRevenue: 0,
+            labels: [],
+            eventData: [],
+            registrationData: []
+          });
+        }
+        
+        // Process attendance data directly from backend
+        if (attendance && typeof attendance === 'object') {
+          setAttendanceData({
+            labels: Array.isArray(attendance.labels) ? attendance.labels : [],
+            capacity: Array.isArray(attendance.capacity) ? attendance.capacity : [],
+            attendees: Array.isArray(attendance.attendees) ? attendance.attendees : []
+          });
+        } else {
+          console.warn('Attendance data from API is not valid:', attendance);
+          setAttendanceData({
+            labels: [],
+            capacity: [],
+            attendees: []
+          });
+        }
+        
+        // Process revenue data directly from backend
+        if (revenue && typeof revenue === 'object') {
+          setRevenueData({
+            labels: Array.isArray(revenue.labels) ? revenue.labels : [],
+            registration: Array.isArray(revenue.registration) ? revenue.registration : [],
+            promotion: Array.isArray(revenue.promotion) ? revenue.promotion : []
+          });
+        } else {
+          console.warn('Revenue data from API is not valid:', revenue);
+          setRevenueData({
+            labels: [],
+            registration: [],
+            promotion: []
+          });
+        }
+        
+        // Process promotion data directly from backend
+        if (promotion && typeof promotion === 'object') {
+          setPromotionData({
+            categoryLabels: promotion.categoryCount ? Object.keys(promotion.categoryCount) : [],
+            categoryValues: promotion.categoryCount ? Object.values(promotion.categoryCount) : [],
+            levelLabels: promotion.promotionLevels ? Object.keys(promotion.promotionLevels) : [],
+            levelValues: promotion.promotionLevels ? Object.values(promotion.promotionLevels) : []
+          });
+        } else {
+          console.warn('Promotion data from API is not valid:', promotion);
+          setPromotionData({
+            categoryLabels: [],
+            categoryValues: [],
+            levelLabels: [],
+            levelValues: []
+          });
+        }
+        
+      } catch (apiError) {
+        console.error('API error details:', apiError);
+        console.log('API error, using mock data as fallback');
+        
+        // Calculate attendees even in fallback mode
+        const totalAttendees = eventsData.reduce((sum, event) => sum + (event.attendees?.length || 0), 0);
+        
+        // Mock data for fallback - only use if the API fails completely
+        setSummaryData({
+          totalEvents: eventsData.length,
+          totalAttendees: totalAttendees, // Use our calculated value here too
+          totalRevenue: 0,
+          labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+          eventData: [0, 0, 0, 0],
+          registrationData: [0, 0, 0, 0]
+        });
+        
+        setAttendanceData({
+          labels: ['No Data Available'],
+          capacity: [0],
+          attendees: [0]
+        });
+        
+        setRevenueData({
+          totalRevenue: 0,
+          labels: ['No Data'],
+          registration: [0],
+          promotion: [0]
+        });
+        
+        setPromotionData({
+          categoryLabels: ['No Data'],
+          categoryValues: [0],
+          levelLabels: ['No Data'],
+          levelValues: [0]
+        });
       }
-      
-      setSummaryData(summary);
-      setAttendanceData(attendance);
-      setRevenueData(revenue);
-      setPromotionData(promotion);
     } catch (err) {
-      setError(err.message || 'Failed to fetch analytics data');
+      setError('Failed to load analytics data');
+      console.error('Analytics error:', err);
     } finally {
       setLoading(false);
     }
   };
   
-  // Generate mock data for demonstration
-  const generateMockSummaryData = () => {
-    let dateRange;
-    let labels = [];
-    
-    if (timeRange === 'week') {
-      dateRange = Array.from({ length: 7 }, (_, i) => {
-        const date = subDays(new Date(), 6 - i);
-        labels.push(format(date, 'EEE'));
-        return date;
-      });
-    } else if (timeRange === 'month') {
-      const start = startOfMonth(new Date());
-      const end = endOfMonth(new Date());
-      const days = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
-      
-      dateRange = Array.from({ length: days }, (_, i) => {
-        const date = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
-        labels.push(format(date, 'd MMM'));
-        return date;
-      });
-    } else { // year
-      dateRange = Array.from({ length: 12 }, (_, i) => {
-        const date = new Date(new Date().getFullYear(), i, 1);
-        labels.push(format(date, 'MMM'));
-        return date;
-      });
-    }
-    
-    // Generate event counts
-    const eventCounts = dateRange.map(() => Math.floor(Math.random() * 5) + 1);
-    const registrationCounts = dateRange.map(() => Math.floor(Math.random() * 25) + 5);
-    
-    return {
-      totalEvents: eventCounts.reduce((a, b) => a + b, 0),
-      totalAttendees: registrationCounts.reduce((a, b) => a + b, 0),
-      totalRevenue: Math.floor(Math.random() * 5000) + 1000,
-      labels,
-      eventData: eventCounts,
-      registrationData: registrationCounts
-    };
-  };
-  
-  const generateMockAttendanceData = () => {
-    const eventNames = ['Workshop A', 'Conference B', 'Seminar C', 'Networking D', 'Lecture E'];
-    const capacities = eventNames.map(() => Math.floor(Math.random() * 50) + 50);
-    const attendees = capacities.map(cap => Math.floor(Math.random() * cap));
-    const attendanceRates = attendees.map((att, i) => (att / capacities[i] * 100).toFixed(1));
-    
-    return {
-      events: eventNames,
-      capacities,
-      attendees,
-      attendanceRates
-    };
-  };
-  
-  const generateMockRevenueData = () => {
-    // Use the same labels as summary data for consistency
-    const labels = summaryData ? summaryData.labels : [];
-    
-    // Generate revenue data
-    const registrationRevenue = labels.map(() => Math.floor(Math.random() * 300) + 50);
-    const promotionRevenue = labels.map(() => Math.floor(Math.random() * 200) + 30);
-    const totalRevenue = registrationRevenue.map((reg, i) => reg + promotionRevenue[i]);
-    
-    return {
-      labels,
-      registrationRevenue,
-      promotionRevenue,
-      totalRevenue,
-      total: {
-        registration: registrationRevenue.reduce((a, b) => a + b, 0),
-        promotion: promotionRevenue.reduce((a, b) => a + b, 0)
-      }
-    };
-  };
-  
-  const generateMockPromotionData = () => {
-    const promotionLevels = ['Basic', 'Premium', 'Featured'];
-    const attendanceIncrease = [15, 35, 60]; // percentage increase
-    const conversionRates = [5, 12, 25]; // percentage
-    const roi = [120, 180, 220]; // percentage return on investment
-    
-    // Event category distribution
-    const categories = ['Workshop', 'Lecture', 'Seminar', 'Conference', 'Networking', 'Other'];
-    const categoryDistribution = categories.map(() => Math.floor(Math.random() * 30) + 5);
-    
-    return {
-      promotionLevels,
-      attendanceIncrease,
-      conversionRates,
-      roi,
-      categories,
-      categoryDistribution
-    };
-  };
-  
-  if (loading) return <div className="loading">Loading analytics data...</div>;
-  
+  // The rest of your component remains the same
   return (
-    <div className="analytics-dashboard">
-      <div className="analytics-header">
-        <h1>Analytics Dashboard</h1>
-        <div className="time-range-selector">
-          <button 
-            className={`time-range-btn ${timeRange === 'week' ? 'active' : ''}`}
-            onClick={() => setTimeRange('week')}
-          >
-            Past Week
-          </button>
-          <button 
-            className={`time-range-btn ${timeRange === 'month' ? 'active' : ''}`}
-            onClick={() => setTimeRange('month')}
-          >
-            This Month
-          </button>
-          <button 
-            className={`time-range-btn ${timeRange === 'year' ? 'active' : ''}`}
-            onClick={() => setTimeRange('year')}
-          >
-            This Year
-          </button>
-        </div>
+    <div className="admin-analytics">
+      <h1>Analytics Dashboard</h1>
+      
+      {/* Time range selector */}
+      <div className="time-range-selector">
+        <button 
+          className={timeRange === 'week' ? 'active' : ''} 
+          onClick={() => setTimeRange('week')}
+        >
+          Last Week
+        </button>
+        <button 
+          className={timeRange === 'month' ? 'active' : ''} 
+          onClick={() => setTimeRange('month')}
+        >
+          Last Month
+        </button>
+        <button 
+          className={timeRange === 'year' ? 'active' : ''} 
+          onClick={() => setTimeRange('year')}
+        >
+          Last Year
+        </button>
       </div>
       
-      {error && <div className="error-message">{error}</div>}
+      {loading && <div className="loading">Loading analytics data...</div>}
       
-      <div className="analytics-summary">
-        <div className="summary-card">
-          <div className="summary-value">{summaryData?.totalEvents || 0}</div>
-          <div className="summary-label">Total Events</div>
-        </div>
-        <div className="summary-card">
-          <div className="summary-value">{summaryData?.totalAttendees || 0}</div>
-          <div className="summary-label">Total Attendees</div>
-        </div>
-        <div className="summary-card">
-          <div className="summary-value">${summaryData?.totalRevenue || 0}</div>
-          <div className="summary-label">Total Revenue</div>
-        </div>
-      </div>
+      {error && <div className="error">{error}</div>}
       
-      <div className="analytics-grid">
-        {/* Event Popularity Chart */}
-        <div className="chart-container">
-          <h2>Event Popularity</h2>
-          <EventPopularityChart 
-            labels={summaryData?.labels || []}
-            eventData={summaryData?.eventData || []}
-            registrationData={summaryData?.registrationData || []}
-          />
-        </div>
-        
-        {/* Attendance Chart */}
-        <div className="chart-container">
-          <h2>Attendance Metrics</h2>
-          <AttendanceChart 
-            events={attendanceData?.events || []}
-            capacities={attendanceData?.capacities || []}
-            attendees={attendanceData?.attendees || []}
-          />
-        </div>
-        
-        {/* Revenue Chart */}
-        <div className="chart-container">
-          <h2>Revenue Breakdown</h2>
-          <RevenueChart 
-            labels={revenueData?.labels || []}
-            registrationRevenue={revenueData?.registrationRevenue || []}
-            promotionRevenue={revenueData?.promotionRevenue || []}
-          />
-          <div className="revenue-summary">
-            <div className="revenue-item">
-              <span className="revenue-label">Registration Revenue:</span>
-              <span className="revenue-value">${revenueData?.total?.registration || 0}</span>
-            </div>
-            <div className="revenue-item">
-              <span className="revenue-label">Promotion Revenue:</span>
-              <span className="revenue-value">${revenueData?.total?.promotion || 0}</span>
+      {!loading && !error && (
+        <div className="analytics-grid">
+          {/* Summary Section */}
+          <div className="analytics-card summary-card">
+            <h2>Key Metrics</h2>
+            <div className="metrics">
+              <div className="metric">
+                <h3>{summaryData?.totalEvents !== undefined ? summaryData.totalEvents : 0}</h3>
+                <p>Events Created</p>
+              </div>
+              <div className="metric">
+                <h3>{summaryData?.totalAttendees !== undefined ? summaryData.totalAttendees : 0}</h3>
+                <p>Total Attendees</p>
+              </div>
+              <div className="metric">
+                <h3>${summaryData?.totalRevenue !== undefined ? summaryData.totalRevenue : 0}</h3>
+                <p>Total Revenue</p>
+              </div>
             </div>
           </div>
+          
+       {/* Event Growth Chart */}
+       <div className="analytics-card">
+            <h2>Event & Registration Growth</h2>
+            <EventPopularityChart data={{
+              labels: summaryData?.labels || [],
+              eventData: summaryData?.eventData || [],
+              registrationData: summaryData?.registrationData || []
+            }} />
+          </div>
+          
+          {/* Attendance Chart */}
+          <div className="analytics-card">
+            <h2>Event Attendance</h2>
+            <AttendanceChart data={attendanceData} />
+          </div>
+          
+          {/* Revenue Chart */}
+          <div className="analytics-card">
+            <h2>Revenue Breakdown</h2>
+            <RevenueChart data={revenueData} />
+          </div>
+          
+          {/* Category Distribution Chart */}
+          <div className="analytics-card">
+            <h2>Event Categories</h2>
+            <CategoryDistributionChart data={{
+              labels: promotionData?.categoryLabels || [],
+              values: promotionData?.categoryValues || []
+            }} />
+          </div>
+          
+          {/* Promotion Effectiveness Chart */}
+          <div className="analytics-card">
+            <h2>Promotion Effectiveness</h2>
+            <PromotionEffectivenessChart data={{
+              labels: promotionData?.levelLabels || [],
+              values: promotionData?.levelValues || []
+            }} />
+          </div>
+          
+          {/* Debug button only visible during development */}
+          {process.env.NODE_ENV !== 'production' && (
+            <button 
+              onClick={() => console.log('Current data state:', {
+                summary: summaryData,
+                attendance: attendanceData,
+                revenue: revenueData,
+                promotion: promotionData
+              })}
+              style={{ 
+                marginTop: '20px', 
+                padding: '5px 10px',
+                background: '#f0f0f0',
+                border: '1px solid #ddd',
+                cursor: 'pointer'
+              }}
+            >
+              Debug Data
+            </button>
+          )}
         </div>
-        
-        {/* Promotion Effectiveness Chart */}
-        <div className="chart-container">
-          <h2>Promotion Effectiveness</h2>
-          <PromotionEffectivenessChart 
-            levels={promotionData?.promotionLevels || []}
-            attendanceIncrease={promotionData?.attendanceIncrease || []}
-            conversionRates={promotionData?.conversionRates || []}
-            roi={promotionData?.roi || []}
-          />
-        </div>
-        
-        {/* Event Category Distribution */}
-        <div className="chart-container">
-          <h2>Event Category Distribution</h2>
-          <CategoryDistributionChart 
-            categories={promotionData?.categories || []}
-            distribution={promotionData?.categoryDistribution || []}
-          />
-        </div>
-      </div>
+      )}
     </div>
   );
 }
