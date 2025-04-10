@@ -269,7 +269,7 @@ router.post('/recommendations', auth, async (req, res) => {
       
       // Check title
       searchTerms.forEach(term => {
-        if (event.title.toLowerCase().includes(term)) {
+        if (event.title && event.title.toLowerCase().includes(term)) {
           score += 3;
           matchReasons.push(`Event title matches your profile: "${term}"`);
         }
@@ -277,7 +277,7 @@ router.post('/recommendations', auth, async (req, res) => {
       
       // Check description
       searchTerms.forEach(term => {
-        if (event.description.toLowerCase().includes(term)) {
+        if (event.description && event.description.toLowerCase().includes(term)) {
           score += 2;
           if (!matchReasons.some(reason => reason.includes(term))) {
             matchReasons.push(`Event description matches your profile: "${term}"`);
@@ -309,14 +309,25 @@ router.post('/recommendations', auth, async (req, res) => {
     // Calculate scores for each event
     const scoredEvents = events.map(calculateMatchScore);
     
-    // Filter events with at least some match and sort by score
-    const recommendedEvents = scoredEvents
-      .filter(event => event.matchScore > 0)
-      .sort((a, b) => b.matchScore - a.matchScore)
-      .slice(0, 6); // Limit to top 6 recommendations
-      
-    res.json(recommendedEvents);
+    // Filter events with a SIGNIFICANT match score (minimum threshold of 3)
+    // If we have at least one good match, only show good matches
+    const goodMatches = scoredEvents.filter(event => event.matchScore >= 3);
     
+    if (goodMatches.length > 0) {
+      // We have good matches, return only those
+      return res.json(
+        goodMatches
+          .sort((a, b) => b.matchScore - a.matchScore)
+          .slice(0, 3) // Limit to top 3 good recommendations
+      );
+    } else {
+      // No good matches, return the best one if there's any match at all
+      const bestMatch = scoredEvents
+        .filter(event => event.matchScore > 0)
+        .sort((a, b) => b.matchScore - a.matchScore)[0];
+        
+      return res.json(bestMatch ? [bestMatch] : []);
+    }
   } catch (error) {
     console.error('Error getting recommendations:', error);
     res.status(500).json({ message: 'Server error' });
