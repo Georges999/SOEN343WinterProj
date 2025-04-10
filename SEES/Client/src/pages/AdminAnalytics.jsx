@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { 
   getAnalyticsSummary, 
   getAttendanceAnalytics, 
-  getRevenueAnalytics, 
   getPromotionAnalytics,
   getEventsCreated
 } from '../services/api';
@@ -11,7 +10,6 @@ import {
 // Import chart components
 import EventPopularityChart from '../components/EventPopularityChart'; 
 import AttendanceChart from '../components/AttendanceChart';
-import RevenueChart from '../components/RevenueChart';
 import PromotionEffectivenessChart from '../components/PromotionEffectivenessChart';
 import CategoryDistributionChart from '../components/CategoryDistributionChart';
 
@@ -22,9 +20,9 @@ function AdminAnalytics({ user }) {
   const [timeRange, setTimeRange] = useState('month'); // week, month, year
   const [summaryData, setSummaryData] = useState(null);
   const [attendanceData, setAttendanceData] = useState(null);
-  const [revenueData, setRevenueData] = useState(null);
   const [promotionData, setPromotionData] = useState(null);
   const [events, setEvents] = useState([]);
+  const [recentEvents, setRecentEvents] = useState([]);
   
   useEffect(() => {
     // Redirect if not admin
@@ -38,6 +36,12 @@ function AdminAnalytics({ user }) {
       try {
         const eventsData = await getEventsCreated();
         setEvents(eventsData);
+        
+        // Get the 5 most recent events for our replacement component
+        const sortedEvents = [...eventsData].sort((a, b) => 
+          new Date(b.dateTime) - new Date(a.dateTime)
+        ).slice(0, 5);
+        setRecentEvents(sortedEvents);
         
         // Now that we have events, fetch analytics data
         await fetchAnalyticsData(eventsData);
@@ -56,40 +60,15 @@ function AdminAnalytics({ user }) {
       setLoading(true);
       setError('');
       
-      let summary, attendance, revenue, promotion;
-      
       try {
-        // Try API calls first
-        summary = await getAnalyticsSummary(timeRange);
-        console.log('Raw summary data from API:', summary);
-        
-        attendance = await getAttendanceAnalytics(timeRange);
-        console.log('Raw attendance data from API:', attendance);
-        
-        revenue = await getRevenueAnalytics(timeRange);
-        console.log('Raw revenue data from API:', revenue);
-        
-        promotion = await getPromotionAnalytics(timeRange);
-        console.log('Raw promotion data from API:', promotion);
+        // Get data from API
+        const summary = await getAnalyticsSummary(timeRange);
+        const attendance = await getAttendanceAnalytics(timeRange);
+        const promotion = await getPromotionAnalytics(timeRange);
 
-        // CRITICAL FIX: Calculate total attendees directly from events data
-        // This matches the calculation in AdminPanel.jsx
+        // Calculate total attendees directly from events data
         const totalAttendees = eventsData.reduce((sum, event) => sum + (event.attendees?.length || 0), 0);
-        console.log('Calculated total attendees from events:', totalAttendees);
         
-        // Add diagnostic logging
-        console.log('Data integrity check:', {
-          summaryValid: summary && typeof summary === 'object',
-          calculatedAttendees: totalAttendees,
-          backendAttendees: summary?.totalAttendees,
-          totalEvents: summary?.totalEvents,
-          totalRevenue: summary?.totalRevenue,
-          hasLabels: Array.isArray(summary?.labels),
-          promotionValid: promotion && typeof promotion === 'object',
-          hasCategoryCount: promotion && typeof promotion.categoryCount === 'object',
-          hasPromotionLevels: promotion && typeof promotion.promotionLevels === 'object'
-        });
-  
         // Set summary data with our locally calculated attendees value
         if (summary && typeof summary === 'object') {
           setSummaryData({
@@ -100,13 +79,10 @@ function AdminAnalytics({ user }) {
             eventData: Array.isArray(summary.eventData) ? summary.eventData : [],
             registrationData: Array.isArray(summary.registrationData) ? summary.registrationData : []
           });
-          
-          console.log('Using attendee count from events data:', totalAttendees);
         } else {
-          console.warn('Summary data from API is not valid:', summary);
           setSummaryData({
-            totalEvents: 0,
-            totalAttendees: totalAttendees, // Still use our calculated value
+            totalEvents: eventsData.length,
+            totalAttendees: totalAttendees,
             totalRevenue: 0,
             labels: [],
             eventData: [],
@@ -122,27 +98,10 @@ function AdminAnalytics({ user }) {
             attendees: Array.isArray(attendance.attendees) ? attendance.attendees : []
           });
         } else {
-          console.warn('Attendance data from API is not valid:', attendance);
           setAttendanceData({
             labels: [],
             capacity: [],
             attendees: []
-          });
-        }
-        
-        // Process revenue data directly from backend
-        if (revenue && typeof revenue === 'object') {
-          setRevenueData({
-            labels: Array.isArray(revenue.labels) ? revenue.labels : [],
-            registration: Array.isArray(revenue.registration) ? revenue.registration : [],
-            promotion: Array.isArray(revenue.promotion) ? revenue.promotion : []
-          });
-        } else {
-          console.warn('Revenue data from API is not valid:', revenue);
-          setRevenueData({
-            labels: [],
-            registration: [],
-            promotion: []
           });
         }
         
@@ -155,7 +114,6 @@ function AdminAnalytics({ user }) {
             levelValues: promotion.promotionLevels ? Object.values(promotion.promotionLevels) : []
           });
         } else {
-          console.warn('Promotion data from API is not valid:', promotion);
           setPromotionData({
             categoryLabels: [],
             categoryValues: [],
@@ -166,39 +124,29 @@ function AdminAnalytics({ user }) {
         
       } catch (apiError) {
         console.error('API error details:', apiError);
-        console.log('API error, using mock data as fallback');
+        setError(`API Error: ${apiError.message || 'Unknown error'}`);
         
-        // Calculate attendees even in fallback mode
-        const totalAttendees = eventsData.reduce((sum, event) => sum + (event.attendees?.length || 0), 0);
-        
-        // Mock data for fallback - only use if the API fails completely
+        // No mock data - just show empty state
         setSummaryData({
           totalEvents: eventsData.length,
-          totalAttendees: totalAttendees, // Use our calculated value here too
+          totalAttendees: eventsData.reduce((sum, event) => sum + (event.attendees?.length || 0), 0),
           totalRevenue: 0,
-          labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-          eventData: [0, 0, 0, 0],
-          registrationData: [0, 0, 0, 0]
+          labels: [],
+          eventData: [],
+          registrationData: []
         });
         
         setAttendanceData({
-          labels: ['No Data Available'],
-          capacity: [0],
-          attendees: [0]
-        });
-        
-        setRevenueData({
-          totalRevenue: 0,
-          labels: ['No Data'],
-          registration: [0],
-          promotion: [0]
+          labels: [],
+          capacity: [],
+          attendees: []
         });
         
         setPromotionData({
-          categoryLabels: ['No Data'],
-          categoryValues: [0],
-          levelLabels: ['No Data'],
-          levelValues: [0]
+          categoryLabels: [],
+          categoryValues: [],
+          levelLabels: [],
+          levelValues: []
         });
       }
     } catch (err) {
@@ -209,7 +157,6 @@ function AdminAnalytics({ user }) {
     }
   };
   
-  // The rest of your component remains the same
   return (
     <div className="admin-analytics">
       <h1>Analytics Dashboard</h1>
@@ -261,8 +208,8 @@ function AdminAnalytics({ user }) {
             </div>
           </div>
           
-       {/* Event Growth Chart */}
-       <div className="analytics-card">
+          {/* Event Growth Chart */}
+          <div className="analytics-card">
             <h2>Event & Registration Growth</h2>
             <EventPopularityChart data={{
               labels: summaryData?.labels || [],
@@ -277,10 +224,41 @@ function AdminAnalytics({ user }) {
             <AttendanceChart data={attendanceData} />
           </div>
           
-          {/* Revenue Chart */}
+          {/* NEW: Recent Events Table (replaces Revenue Breakdown) */}
           <div className="analytics-card">
-            <h2>Revenue Breakdown</h2>
-            <RevenueChart data={revenueData} />
+            <h2>Recent Events</h2>
+            {recentEvents.length > 0 ? (
+              <div className="recent-events-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Event</th>
+                      <th>Date</th>
+                      <th>Attendance</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentEvents.map(event => (
+                      <tr key={event._id}>
+                        <td>{event.title}</td>
+                        <td>{new Date(event.dateTime).toLocaleDateString()}</td>
+                        <td>{event.attendees?.length || 0} / {event.capacity}</td>
+                        <td>
+                          {new Date(event.dateTime) > new Date() ? (
+                            <span className="status upcoming">Upcoming</span>
+                          ) : (
+                            <span className="status completed">Completed</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="no-data">No recent events found</div>
+            )}
           </div>
           
           {/* Category Distribution Chart */}
@@ -307,7 +285,7 @@ function AdminAnalytics({ user }) {
               onClick={() => console.log('Current data state:', {
                 summary: summaryData,
                 attendance: attendanceData,
-                revenue: revenueData,
+                events: recentEvents,
                 promotion: promotionData
               })}
               style={{ 
@@ -323,6 +301,56 @@ function AdminAnalytics({ user }) {
           )}
         </div>
       )}
+
+      {/* Add styles for the recent events table */}
+      <style jsx>{`
+        .recent-events-table {
+          width: 100%;
+          overflow-x: auto;
+        }
+        
+        .recent-events-table table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+        
+        .recent-events-table th, 
+        .recent-events-table td {
+          padding: 8px 12px;
+          text-align: left;
+          border-bottom: 1px solid #eee;
+        }
+        
+        .recent-events-table th {
+          background-color: #f8f9fa;
+          font-weight: 600;
+        }
+        
+        .status {
+          display: inline-block;
+          padding: 3px 8px;
+          border-radius: 12px;
+          font-size: 0.8rem;
+          font-weight: 500;
+        }
+        
+        .status.upcoming {
+          background-color: #e3f2fd;
+          color: #1976d2;
+        }
+        
+        .status.completed {
+          background-color: #e8f5e9;
+          color: #388e3c;
+        }
+        
+        .no-data {
+          padding: 20px;
+          text-align: center;
+          color: #666;
+          font-style: italic;
+        }
+      `}</style>
     </div>
   );
 }

@@ -155,7 +155,9 @@ const handleCancelRegistration = async () => {
         <div className="event-main">
           <section className="event-description">
             <h2>About This Event</h2>
-            <p>{event.description}</p>
+            <div className="description-content">
+            {event.description}
+             </div>
           </section>
 
           <section className="event-details">
