@@ -97,58 +97,110 @@ const generateToken = (id, role) => {
 
 router.post('/recommendations', protect, async (req, res) => {
   try {
-      const { skills, achievements, expertise } = req.body;
-      const allEvents = await Event.find();
+    const { skills = [], achievements = [], expertise = [] } = req.body;
+    
+    // Get all future events
+    let events = await Event.find({
+      dateTime: { $gt: new Date() } // Only future events
+    }).populate('organizer', 'name');
+    
+    if (!events.length) {
+      return res.json([]);
+    }
+    
+    console.log(`Processing ${events.length} events for recommendations`);
+    
+    // Flatten the user profile terms
+    const userTerms = [
+      ...skills.map(s => s.toLowerCase()), 
+      ...achievements.map(s => s.toLowerCase()), 
+      ...expertise.map(s => s.toLowerCase())
+    ];
+    
+    console.log("User terms:", userTerms);
+    
+    // Score each event
+    const scoredEvents = events.map(event => {
+      let score = 0;
+      let matchReasons = [];
       
-      console.log("Recommendation request:", { skills, achievements, expertise });
-      console.log("Found events:", allEvents.length);
+      // Check title
+      userTerms.forEach(term => {
+        if (event.title && event.title.toLowerCase().includes(term)) {
+          score += 3;
+          matchReasons.push(`Title matches "${term}"`);
+        }
+      });
       
-      // Handle case with no events
-      if (!allEvents || allEvents.length === 0) {
-          return res.json([]);
+      // Check description
+      userTerms.forEach(term => {
+        if (event.description && event.description.toLowerCase().includes(term)) {
+          score += 2;
+          matchReasons.push(`Description matches "${term}"`);
+        }
+      });
+      
+      // Check category
+      if (event.category) {
+        const category = event.category.toLowerCase();
+        
+        expertise.forEach(exp => {
+          if (category.includes(exp.toLowerCase())) {
+            score += 5;
+            matchReasons.push(`Category matches expertise "${exp}"`);
+          }
+        });
+        
+        skills.forEach(skill => {
+          if (category.includes(skill.toLowerCase())) {
+            score += 4; 
+            matchReasons.push(`Category matches skill "${skill}"`);
+          }
+        });
       }
-
-      const tfidf = new TfIdf();
-
-      // Build TF-IDF corpus from event descriptions
-      allEvents.forEach(event => {
-          if (event.description) {
-              tfidf.addDocument(event.description);
-          }
-      });
-
-      // Get user interests
-      const userQuery = [...(skills || []), ...(achievements || []), ...(expertise || [])].join(' ');
-
-      const recommendations = [];
-      allEvents.forEach((event, index) => {
-          let score = 0;
-          // Make sure there's content to analyze
-          if (userQuery && event.description) {
-              try {
-                  tfidf.listTerms(0 /* document index */).forEach(function (item) {
-                      if (userQuery.includes(item.term)) {
-                          score += item.tfidf;
-                      }
-                  });
-              } catch (err) {
-                  console.error("Error processing TF-IDF for event:", err);
-                  // Default score if there's an error
-                  score = 0.1;
-              }
-          }
-          recommendations.push({ event, score });
-      });
-
-      recommendations.sort((a, b) => b.score - a.score);
-      res.json(recommendations.slice(0, 5)); // Top 5 recommendations
+      
+      // Normalize score to be between 0 and 1
+      // Maximum possible score would be around 14 (3+2+5+4) per term
+      const normalizedScore = userTerms.length > 0 ? score / (14 * userTerms.length) : 0;
+      
+      console.log(`Event "${event.title}" score: ${score}, normalized: ${normalizedScore.toFixed(2)}`);
+      
+      return {
+        ...event._doc,
+        score: normalizedScore,
+        rawScore: score,
+        matchReasons
+      };
+    });
+    
+    // Sort by score
+    scoredEvents.sort((a, b) => b.score - a.score);
+    
+    // Filter for meaningful matches
+    const matchThreshold = 0.05; // 5% match minimum
+    const goodMatches = scoredEvents.filter(event => event.score >= matchThreshold);
+    
+    // Return only one best match if we have a good one
+    if (goodMatches.length > 0) {
+      const bestMatch = goodMatches[0];
+      console.log(`Returning best match: "${bestMatch.title}" with score ${bestMatch.score}`);
+      return res.json([bestMatch]);
+    } else if (scoredEvents.length > 0) {
+      // No good matches, but return the best one anyway if available
+      const bestMatch = scoredEvents[0];
+      console.log(`No good matches but returning top result: "${bestMatch.title}" with score ${bestMatch.score}`);
+      return res.json([bestMatch]);
+    }
+    
+    // No matches at all
+    console.log('No matches found');
+    return res.json([]);
+    
   } catch (error) {
-      console.error('Error fetching event recommendations:', error);
-      // Return empty array instead of error for more graceful handling
-      res.json([]);
+    console.error('Error getting recommendations:', error);
+    res.json([]);
   }
 });
-
 router.put('/:id/profile', protect, async (req, res) => {
   try {
     const { skills, achievements, expertise } = req.body;
